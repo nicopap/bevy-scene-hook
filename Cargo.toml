@@ -1,0 +1,14 @@
+[package]
+name = "bevy-scene-hook"
+authors = ["Nicola Papale"]
+description = "Ad-hoc component insertion for bevy scenes"
+license = "Apache-2.0"
+readme = "Readme.md"
+keywords = ["bevy"]
+categories = ["game-development"]
+repository = "https://github.com/nicopap/bevy-scene-hook"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.6.0", default-features = false }
