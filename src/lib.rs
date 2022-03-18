@@ -22,13 +22,16 @@ pub struct SceneInstance<T: ?Sized> {
     loaded: bool,
     _marker: PhantomData<T>,
 }
-impl<T> SceneInstance<T> {
+impl<T: ?Sized> SceneInstance<T> {
     pub fn new(instance: InstanceId) -> Self {
         SceneInstance {
             instance,
             loaded: false,
             _marker: PhantomData,
         }
+    }
+    pub fn is_loaded(&self) -> bool {
+        self.loaded
     }
 }
 

@@ -90,6 +90,10 @@ impl BevyPlugin for Plugin {
 * The bevy gltf loader currently doesn't name entities associated with a mesh (the entity
   with the `Handle<Mesh>` component), this is [fixed in a pending PR](https://github.com/bevyengine/bevy/pull/4119).
 
+## Change log
+
+* 1.1.0: Add `is_loaded` method to `SceneInstance`
+
 ## License
 
 This library is licensed under Apache 2.0.
