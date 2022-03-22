@@ -1,8 +1,13 @@
-//! Systems to insert components on loaded scenes
+//! Systems to insert components on loaded scenes.
 //!
-//! Please see the [SceneHook] trait documentation or [the
+//! Please see the [`SceneHook`] trait documentation or [the
 //! Readme](https://docs.rs/crate/bevy-scene-hook/latest) for detailed
 //! usage examples.
+//!
+//! If `SceneHook` is too weak for you and you need access to queries or world
+//! resources (mutable or not), you can use [`world::SceneHook`] instead.
+pub mod world;
+
 use std::marker::PhantomData;
 
 use bevy::{
@@ -111,7 +116,7 @@ impl<T: ?Sized> SceneInstance<T> {
 /// impl SceneHook for HandModel {}
 /// // To:
 /// enum HandModel<const N: usize> {}
-/// impl<const N: usize> ScenefHook for HandModel<N> {}
+/// impl<const N: usize> SceneHook for HandModel<N> {}
 /// ```
 #[allow(unused_parens)]
 pub trait SceneHook: Send + Sync + 'static {

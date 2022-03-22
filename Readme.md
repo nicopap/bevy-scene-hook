@@ -14,6 +14,11 @@ copy/pasting the code as a module, you can get it from [crates.io](https://crate
 
 ## Usage
 
+```toml
+[dependencies]
+bevy-scene-hook = "1.2"
+```
+
 The following snippet of code is extracted from [Warlock's Gambit source
 code](https://github.com/team-plover/warlocks-gambit).
 
@@ -84,6 +89,9 @@ impl BevyPlugin for Plugin {
 }
 ```
 
+If `SceneHook` is too weak for you and you need access to queries or world
+resources (mutable or not), you can use `world::SceneHook` instead.
+
 ## Limitations
 
 * You will need to keep track of what you name what.
@@ -92,7 +100,9 @@ impl BevyPlugin for Plugin {
 
 ## Change log
 
-* 1.1.0: Add `is_loaded` method to `SceneInstance`
+* `1.1.0`: Add `is_loaded` method to `SceneInstance`
+* `1.2.0`: Add the `world` module containing a `SceneHook` trait that has
+  exclusive world access. Useful if you want access to assets for example.
 
 ## License
 
