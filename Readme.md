@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io](https://crate
 
 ```toml
 [dependencies]
-bevy-scene-hook = "1.2"
+bevy-scene-hook = "2.0"
 ```
 
 The following snippet of code is extracted from [Warlock's Gambit source
@@ -95,14 +95,22 @@ resources (mutable or not), you can use `world::SceneHook` instead.
 ## Limitations
 
 * You will need to keep track of what you name what.
-* The bevy gltf loader currently doesn't name entities associated with a mesh (the entity
-  with the `Handle<Mesh>` component), this is [fixed in a pending PR](https://github.com/bevyengine/bevy/pull/4119).
 
 ## Change log
 
 * `1.1.0`: Add `is_loaded` method to `SceneInstance`
 * `1.2.0`: Add the `world` module containing a `SceneHook` trait that has
   exclusive world access. Useful if you want access to assets for example.
+* `2.0.0`: **Breaking**: bump bevy version to `0.7` (you should be able to
+  upgrade from `1.2.0` without changing your code)
+
+### Version matrix
+
+| bevy | latest supporting version      |
+|------|--------|
+| 0.7  | 2.0.0 |
+| 0.6  | 1.2.0 |
+
 
 ## License
 
