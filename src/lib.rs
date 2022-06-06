@@ -1,162 +1,319 @@
 //! Systems to insert components on loaded scenes.
 //!
-//! Please see the [`SceneHook`] trait documentation or [the
-//! Readme](https://docs.rs/crate/bevy-scene-hook/latest) for detailed
-//! usage examples.
-//!
-//! If `SceneHook` is too weak for you and you need access to queries or world
-//! resources (mutable or not), you can use [`world::SceneHook`] instead.
-pub mod world;
-
-use std::marker::PhantomData;
-
+//! Please see the [`HookingSceneSpawner`] documentation for detailed examples.
 use bevy::{
     ecs::{
-        schedule::ShouldRun::{self, No, Yes},
-        system::EntityCommands,
+        schedule::ShouldRun,
+        system::{EntityCommands, SystemParam},
     },
     prelude::*,
     scene::InstanceId,
 };
+mod hook;
 
-/// Add this as a component to any entity to trigger
-/// [`<T as SceneHook>::hook`](SceneHook::hook)
-#[derive(Component)]
-pub struct SceneInstance<T: ?Sized> {
-    instance: InstanceId,
-    loaded: bool,
-    _marker: PhantomData<T>,
-}
-impl<T: ?Sized> SceneInstance<T> {
-    pub fn new(instance: InstanceId) -> Self {
-        SceneInstance {
-            instance,
-            loaded: false,
-            _marker: PhantomData,
-        }
-    }
-    pub fn is_loaded(&self) -> bool {
-        self.loaded
-    }
-}
+use hook::SceneHook;
+pub use hook::{Hook, SceneLoaded};
 
-/// Define systems to handle adding components to entites named in a loaded
-/// scene.
+/// Convenience parameter to query if a scene marked with `M` has been loaded.
 ///
-/// Note that you _should_ (but don't need to) use an uninhabited type to
-/// `impl` this trait.
+/// # Example
 ///
-/// ## Example
+/// ```rust, no_run
+/// # use bevy::prelude::*;
+/// use bevy_scene_hook::{Hook, HookPlugin, HookingSceneSpawner, HookedSceneState};
 ///
-/// First you need to define your model type:
-/// ```rust
-/// # use bevy::{prelude::*, ecs::system::EntityCommands};
-/// # use bevy_scene_hook::SceneHook;
-/// # #[derive(Component)]
-/// # enum RigidBody { Dynamic }
-///
-/// const FINGER_COUNT: usize = 5;
 /// #[derive(Component)]
-/// struct Finger(usize);
-/// // Uninhabited type (there are no values of this type and therefore cannot
-/// // be instantiated, since we don't intend to instantiate it, might as well
-/// // prevent from doing so)
-/// enum HandModel {}
-/// impl SceneHook for HandModel {
-///     fn hook_named_node(name: &Name, cmds: &mut EntityCommands) {
-///         let finger_nodes_names = ["thumb", "index", "major", "ring", "pinky"];
-///         let maybe_name_index = finger_nodes_names.iter().enumerate()
-///                 .find(|(_, n)| **n == name.as_str())
-///                 .map(|(i, _)| i);
-///         if let Some(index) = maybe_name_index {
-///             cmds.insert_bundle((Finger(index), RigidBody::Dynamic));
-///         }
+/// struct Graveyard;
+///
+/// #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+/// pub enum GameState { Loading, Playing }
+///
+/// fn load_scene(
+///     mut scene_spawner: HookingSceneSpawner,
+///     mut cmds: Commands,
+///     asset_server: Res<AssetServer>,
+/// ) {
+///     let res = scene_spawner.with_comp_hook(
+///         asset_server.load("scene.glb#Scene0"),
+///         |name: &Name, cmds| {
+///             match name.as_str() {
+///                 "OppoCardSpawn" => cmds.insert(GlobalTransform::default()),
+///                 _ => cmds,
+///             };
+///         },
+///     );
+///     cmds.entity(res.entity).insert(Graveyard);
+/// }
+///
+/// fn complete_load_screen(
+///     mut state: ResMut<State<GameState>>,
+///     scene: HookedSceneState<Graveyard>,
+/// ) {
+///     if scene.is_loaded() {
+///         state.set(GameState::Playing).expect("no state issues");
 ///     }
 /// }
-/// ```
-///
-/// Then, you should add the `HandModel::hook` system to your bevy ecs, and can
-/// add the `HandModel::when_spawned` run criteria to the systems that rely on
-/// the presence of the `Finger` component.
-/// ```rust,no_run
-/// # use bevy::{prelude::*, ecs::{schedule::ShouldRun, system::EntityCommands}};
-/// use bevy_scene_hook::{SceneHook, SceneInstance};
-/// # #[derive(Component)]
-/// # struct Finger(usize);
-/// # enum HandModel {}
-/// # impl SceneHook for HandModel {
-/// #    fn hook_named_node(name: &Name, cmds: &mut EntityCommands) {}
-/// # }
-/// fn play_piano(fingers: Query<&Finger>) {}
-/// fn move_fingers(fingers: Query<&mut Finger>) {}
 /// fn main() {
 ///     let mut app = App::new();
-///     app.add_system_set(
-///         SystemSet::new()
-///             .with_system(play_piano)
-///             .with_system(move_fingers)
-///             // Systems that use a `Finger` component can be made to run
-///             // only when the model is spawned with this run criteria
-///             .with_run_criteria(HandModel::when_spawned),
-///     );
-///     // You need to add the `HandModel::hook` system with the
-///     // `when_not_spawned` run criteria
-///     app.add_system(HandModel::hook.with_run_criteria(HandModel::when_not_spawned));
+///     app
+///         .add_plugin(HookPlugin)
+///         .add_state(GameState::Loading)
+///         .add_startup_system(load_scene)
+///         .add_system_set(
+///             SystemSet::on_update(GameState::Loading)
+///                 .with_system(complete_load_screen),
+///         );
 /// }
 /// ```
+#[derive(SystemParam)]
+pub struct HookedSceneState<'w, 's, M: Component> {
+    query: Query<'w, 's, (), (With<M>, With<SceneLoaded>)>,
+}
+impl<'w, 's, T: Component> HookedSceneState<'w, 's, T> {
+    pub fn is_loaded(&self) -> bool {
+        self.query.iter().next().is_some()
+    }
+}
+/// Convenience run criteria to query if a scene marked with `M` has been loaded.
 ///
-/// If you have multiple of the same models, you _probably want to use another
-/// method_ (and take inspiration from the implementation of this trait). But
-/// if you have a known-at-compile-time count of the model (typically for
-/// player models) you can use a const generic. In the previous example, it is
-/// question of replacing the two lines:
-/// ```rust,ignore
-/// // From:
-/// enum HandModel {}
-/// impl SceneHook for HandModel {}
-/// // To:
-/// enum HandModel<const N: usize> {}
-/// impl<const N: usize> SceneHook for HandModel<N> {}
+/// # Example
+///
+/// ```rust, no_run
+/// # use bevy::prelude::*;
+/// use bevy_scene_hook::{Hook, HookingSceneSpawner, is_scene_hooked};
+///
+/// #[derive(Component)] struct OppoCardSpawner;
+/// #[derive(Component)] struct PlayerCardSpawner;
+///
+/// #[derive(Component)]
+/// struct Graveyard;
+///
+/// fn load_scene(
+///     mut scene_spawner: HookingSceneSpawner,
+///     mut cmds: Commands,
+///     asset_server: Res<AssetServer>,
+/// ) {
+///     let res = scene_spawner.with_comp_hook(
+///         asset_server.load("scene.glb#Scene0"),
+///         |name: &Name, cmds| {
+///             match name.as_str() {
+///                 "PlayerCardSpawn" => cmds.insert(PlayerCardSpawner),
+///                 "OppoCardSpawn" => cmds.insert(OppoCardSpawner),
+///                 _ => cmds,
+///             };
+///         },
+///     );
+///     cmds.entity(res.entity).insert(Graveyard);
+/// }
+/// fn use_spawner(q: Query<&GlobalTransform, With<PlayerCardSpawner>>) {
+///     let transform = q.single();
+///     // do stuff with transform
+/// }
+/// fn main() {
+///     let mut app = App::new();
+///     app
+///         .add_startup_system(load_scene)
+///         .add_system(use_spawner.with_run_criteria(is_scene_hooked::<Graveyard>));
+/// }
 /// ```
-#[allow(unused_parens)]
-pub trait SceneHook: Send + Sync + 'static {
-    /// Add [`Component`](https://docs.rs/bevy/0.6.1/bevy/ecs/component/trait.Component.html)s
-    /// or do anything with `commands`, the
-    /// [`EntityCommands`](https://docs.rs/bevy/0.6.1/bevy/ecs/system/struct.EntityCommands.html)
-    /// for the named entity in the [`SceneInstance<Self>`] scene.
-    fn hook_named_node(name: &Name, commands: &mut EntityCommands);
+pub fn is_scene_hooked<M: Component>(state: HookedSceneState<M>) -> ShouldRun {
+    match state.is_loaded() {
+        true => ShouldRun::Yes,
+        false => ShouldRun::No,
+    }
+}
 
-    /// [`RunCriteria`](https://docs.rs/bevy/0.6.1/bevy/ecs/prelude/struct.RunCriteria.html)
-    /// to add to systems that only run after the scene was hooked.
-    fn when_spawned(instance: Query<&SceneInstance<Self>>) -> ShouldRun {
-        let is_loaded = instance.get_single().map_or(false, |inst| inst.loaded);
-        (if is_loaded { Yes } else { No })
-    }
-    /// [`RunCriteria`](https://docs.rs/bevy/0.6.1/bevy/ecs/prelude/struct.RunCriteria.html)
-    /// to add to systems that only run before the scene was hooked.
-    fn when_not_spawned(instance: Query<&SceneInstance<Self>>) -> ShouldRun {
-        let is_loaded = instance.get_single().map_or(false, |inst| inst.loaded);
-        (if !is_loaded { Yes } else { No })
-    }
-    /// Calls [`Self::hook_named_node`] for each named entity in the scene
-    /// specified in [`SceneInstance<Self>`].
+/// Return value of [`HookingSceneSpawner`] methods.
+#[derive(Debug, Copy, Clone)]
+pub struct HookResult {
+    /// The entity to which the hook has been added.
     ///
-    /// Add this system to your app for the hooks to run.
-    fn hook(
-        mut instance: Query<&mut SceneInstance<Self>>,
-        mut cmds: Commands,
-        names: Query<&Name>,
-        scene_manager: Res<SceneSpawner>,
-    ) {
-        if let Ok(mut scene_instance) = instance.get_single_mut() {
-            if let Some(entities) = scene_manager.iter_instance_entities(scene_instance.instance) {
-                for entity in entities {
-                    if let Ok(name) = names.get(entity) {
-                        Self::hook_named_node(name, &mut cmds.entity(entity));
-                    }
-                }
-                scene_instance.loaded = true;
-            }
-        }
+    /// If using [`HookingSceneSpawner::child_comp_hook`] or
+    /// [`HookingSceneSpawner::child`], this is the `parent` argument.
+    pub entity: Entity,
+    /// The instance of the spawned scene.
+    pub instance: InstanceId,
+}
+
+/// Parameter to add scenes that run arbitrary hooks when the scene is fully
+/// loaded.
+///
+/// You can use it to add your own non-serializable components to entites
+/// present in a scene file.
+///
+/// A typical usage is adding animation or physics collision data to a scene
+/// spawned from a file format that do not support that kind of data.
+///
+/// # Example
+///
+/// The most basic usage relies on a closure. Here, we capture the `decks`
+/// value so that we can use it in the closure.
+///
+/// ```rust
+/// # use bevy::prelude::{AssetServer, Res, Commands, Component, Name, Handle, Scene};
+/// use bevy::ecs::system::EntityCommands;
+/// use bevy_scene_hook::{Hook, HookingSceneSpawner};
+/// # type DeckData = Scene;
+/// #[derive(Clone)]
+/// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
+/// #[derive(Component)]
+/// struct Graveyard;
+/// fn hook(decks: &DeckAssets, name: &str, cmds: &mut EntityCommands) {
+///     match name {
+///         "PlayerDeck" => cmds.insert(decks.player.clone_weak()),
+///         "OppoDeck" => cmds.insert(decks.oppo.clone_weak()),
+///         _ => cmds,
+///     };
+/// }
+/// fn load_scene(
+///     mut scene_spawner: HookingSceneSpawner,
+///     mut cmds: Commands,
+///     decks: Res<DeckAssets>,
+///     asset_server: Res<AssetServer>,
+/// ) {
+///     let decks = decks.clone();
+///     let res = scene_spawner.with_comp_hook(
+///         asset_server.load("scene.glb#Scene0"),
+///         move |name: &Name, cmds| hook(&decks, name.as_str(), cmds),
+///     );
+///     cmds.entity(res.entity).insert(Graveyard);
+/// }
+/// ```
+#[derive(SystemParam)]
+pub struct HookingSceneSpawner<'w, 's> {
+    cmds: Commands<'w, 's>,
+    scene_spawner: ResMut<'w, SceneSpawner>,
+}
+impl<'w, 's> HookingSceneSpawner<'w, 's> {
+    /// Add a hook to a scene, to run for each entities when the scene is
+    /// loaded, closures implement `Hook`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use bevy::prelude::{AssetServer, Res, Component, Name};
+    /// use bevy::ecs::{world::EntityRef, system::EntityCommands};
+    /// use bevy_scene_hook::{Hook, HookingSceneSpawner};
+    /// # enum PileType { War }
+    /// # #[derive(Component)] struct Pile(PileType);
+    /// # #[derive(Component)] struct BirdPupil;
+    /// fn load_scene(
+    ///     mut scene_spawner: HookingSceneSpawner,
+    ///     asset_server: Res<AssetServer>,
+    /// ) {
+    ///     scene_spawner.with_hook(
+    ///         asset_server.load("scene.glb#Scene0"),
+    ///         |entity: &EntityRef, cmds: &mut EntityCommands| {
+    ///             match entity.get::<Name>().map(|t|t.as_str()) {
+    ///                 Some("Pile") => cmds.insert(Pile(PileType::War)),
+    ///                 Some("BirdPupillaSprite") => cmds.insert(BirdPupil),
+    ///                 _ => cmds,
+    ///             };
+    ///         },
+    ///     );
+    /// }
+    /// ```
+    ///
+    /// You can also implement [`Hook`] on your own types and provide one. Note
+    /// that strictly speaking, you might as well pass a closure. Please check
+    /// the [`Hook`] trait documentation for an example.
+    pub fn with_hook<T: Hook>(&mut self, handle: Handle<Scene>, hook: T) -> HookResult {
+        let instance = self.scene_spawner.spawn(handle);
+        let hook = SceneHook::new(instance, hook);
+        let entity = self.cmds.spawn().insert(hook).id();
+        HookResult { entity, instance }
+    }
+
+    /// Add a hook to a scene, to run for each entities when the scene is
+    /// loaded, and spawn the scene as a child of `parent`.
+    ///
+    /// See [`Self::with_hook`] for more details.
+    pub fn child<T: Hook>(&mut self, handle: Handle<Scene>, parent: Entity, hook: T) -> HookResult {
+        let instance = self.scene_spawner.spawn_as_child(handle, parent);
+        let hook = SceneHook::new(instance, hook);
+        let entity = self.cmds.entity(parent).insert(hook).id();
+        // TODO: remove
+        assert_eq!(entity, parent);
+        HookResult { entity, instance }
+    }
+
+    /// Add a closure with component parameter as hook.
+    ///
+    /// This is useful if you only care about a specific component to identify
+    /// individual entities of your scene, rather than every possible components.
+    ///
+    /// See [`Self::with_hook`] for more details.
+    ///
+    /// # Example
+    ///
+    /// The original version of this library, relied exclusively on the `Name`
+    /// parameter. Here is how you can emulate it.
+    /// ```rust
+    /// # use bevy::prelude::{AssetServer, Res, Component, Name};
+    /// use bevy_scene_hook::HookingSceneSpawner;
+    /// # #[derive(Component)] struct OppoCardSpawner;
+    /// # #[derive(Component)] struct PlayerCardSpawner;
+    /// fn load_scene(
+    ///     mut scene_spawner: HookingSceneSpawner,
+    ///     asset_server: Res<AssetServer>,
+    /// ) {
+    ///     scene_spawner.with_comp_hook(
+    ///         asset_server.load("scene.glb#Scene0"),
+    ///         |name: &Name, cmds| {
+    ///             match name.as_str() {
+    ///                 "PlayerCardSpawn" => cmds.insert(PlayerCardSpawner),
+    ///                 "OppoCardSpawn" => cmds.insert(OppoCardSpawner),
+    ///                 _ => cmds,
+    ///             };
+    ///         },
+    ///     );
+    /// }
+    /// ```
+    ///
+    pub fn with_comp_hook<C, F>(&mut self, handle: Handle<Scene>, hook: F) -> HookResult
+    where
+        F: Fn(&C, &mut EntityCommands) + Send + Sync + 'static,
+        C: Component,
+    {
+        let instance = self.scene_spawner.spawn(handle);
+        let hook = SceneHook::new_comp(instance, hook);
+        let entity = self.cmds.spawn().insert(hook).id();
+        HookResult { entity, instance }
+    }
+
+    /// Add a closure with component parameter as hook, and spawn the scene as a child of `parent`.
+    ///
+    /// See [`Self::with_hook`] and [`Self::child`] for more details.
+    pub fn child_comp_hook<C, F>(
+        &mut self,
+        handle: Handle<Scene>,
+        parent: Entity,
+        hook: F,
+    ) -> HookResult
+    where
+        F: Fn(&C, &mut EntityCommands) + Send + Sync + 'static,
+        C: Component,
+    {
+        let instance = self.scene_spawner.spawn_as_child(handle, parent);
+        let hook = SceneHook::new_comp(instance, hook);
+        let entity = self.cmds.entity(parent).insert(hook).id();
+        // TODO: remove
+        assert_eq!(entity, parent);
+        HookResult { entity, instance }
+    }
+}
+
+/// Systems defined in the [`bevy_scene_hook`](crate) crate (this crate).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SystemLabel)]
+pub enum Systems {
+    /// System running the hooks registered with [`HookingSceneSpawner`].
+    SceneHookRunner,
+}
+
+/// Plugin to run hooks associated with spawned scenes.
+pub struct HookPlugin;
+impl Plugin for HookPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(hook::run_hooks.label(Systems::SceneHookRunner));
     }
 }

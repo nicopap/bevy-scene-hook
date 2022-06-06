@@ -5,96 +5,91 @@
 [![Apache 2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE)
 [![Documentation](https://docs.rs/bevy-scene-hook/badge.svg)](https://docs.rs/bevy-scene-hook/)
 
-A one-file proof of concept for adding components ad-hoc within code to
-entities spawned through scenes (such as `gltf` files) in [the bevy game
-engine](https://bevyengine.org/).
+A proof of concept for adding components ad-hoc within code to entities
+spawned through scenes (such as `gltf` files) in the [bevy game engine].
 
 If you don't mind adding such a small dependency to your code rather than
-copy/pasting the code as a module, you can get it from [crates.io](https://crates.io/crates/bevy-scene-hook).
+copy/pasting the code as a module, you can get it from [crates.io].
 
 ## Usage
 
 ```toml
 [dependencies]
-bevy-scene-hook = "2.0"
+bevy-scene-hook = "3.0"
 ```
 
-The following snippet of code is extracted from [Warlock's Gambit source
-code](https://github.com/team-plover/warlocks-gambit).
+The following snippet of code is extracted from
+[Warlock's Gambit source code][warlock-source].
 
-It loads the `scene.glb` file when the game state becomes `GameState::Loading`.
-It then runs the `Scene::hook` method once using the `Scene::when_not_spawned` run
-criteria, `Scene::hook` runs the `Scene::hook_named_node` method for each named
-entity in the scene and adds specific components to them. Most notably
-the animation ones. It then leaves the `GameState::Loading` state using the
-`Scene::when_spawned` run criteria.
+It loads the `scene.glb` file when the game starts. When the scene is fully loaded,
+the closure passed to `with_comp_hook` is ran for each entity with a `Name` component
+present in the scene. We add a `Graveyard` component to the `Entity` containing the
+`SceneHook`, so that it can later be checked for whether the scene completed loading.
 
 It is possible to name object in `glb` scenes in blender using the Outliner
 dock (the tree view at the top right) and double-clicking object names.
 
 ```rust
-use bevy::{
-    ecs::system::EntityCommands,
-    prelude::{Plugin as BevyPlugin, *},
-};
-use bevy_scene_hook::{SceneHook, SceneInstance};
-use crate::{
-    animate::Animated,
-    camera::PlayerCam,
-    common_components::{OppoCardSpawner, OppoHand, PlayerCardSpawner, PlayerHand, PlayerSleeve},
-    pile::{Pile, PileType},
-    state::GameState,
-};
-pub enum Scene {}
-impl SceneHook for Scene {
-    fn hook_named_node(name: &Name, cmds: &mut EntityCommands) {
-        match name.as_str() {
-            "PlayerPerspective_Orientation" => cmds.insert(PlayerCam),
-            "PlayerCardSpawn" => cmds.insert(PlayerCardSpawner),
-            "OppoCardSpawn" => cmds.insert(OppoCardSpawner),
-            "OppoHand" => cmds.insert_bundle((OppoHand, Animated::bob(1.0, 0.3, 6.0))),
-            "PlayerHand" => cmds.insert_bundle((PlayerHand, Animated::bob(2.0, 0.05, 7.0))),
-            "Pile" => cmds.insert(Pile::new(PileType::War)),
-            "OppoPile" => cmds.insert(Pile::new(PileType::Oppo)),
-            "PlayerPile" => cmds.insert(Pile::new(PileType::Player)),
-            "ManBody" => cmds.insert(Animated::breath(0.0, 0.03, 6.0)),
-            "ManHead" => cmds.insert(Animated::bob(6. / 4., 0.1, 6.0)),
-            "Bird" => cmds.insert(Animated::breath(0.0, 0.075, 5.0)),
-            "BirdEyePupilla" => cmds.insert(Animated::bob(5. / 4., 0.02, 5.0)),
-            "PlayerSleeveStash" => cmds.insert(PlayerSleeve),
-            _ => cmds,
-        };
-    }
+#[derive(Component)]
+pub struct Graveyard;
+
+fn hook(
+    decks: &DeckAssets,
+    name: &str,
+    cmds: &mut EntityCommands,
+) {
+    match name {
+        "PlayerPerspective_Orientation" => cmds.insert_bundle((
+            RayCastSource::<HandRaycast>::new(),
+            RayCastSource::<SleeveArea>::new(),
+            RayCastSource::<HandDisengageArea>::new(),
+        )),
+        "PlayerDeck" => cmds.insert(decks.player.clone_weak()),
+        "OppoDeck" => cmds.insert(decks.oppo.clone_weak()),
+        "PlayerPile" => cmds.insert(Pile::new(Participant::Player)),
+        "OppoPile" => cmds.insert(Pile::new(Participant::Oppo)),
+        "PlayerCardSpawn" => cmds.insert(PlayerCardSpawner),
+        "OppoCardSpawn" => cmds.insert(OppoCardSpawner),
+        "PlayerHand" => cmds.insert_bundle((PlayerHand, Animated::bob(2.0, 0.05, 7.0))),
+        "OppoHand" => cmds.insert_bundle((OppoHand, Animated::bob(1.0, 0.3, 6.0))),
+        "Pile" => cmds.insert(Pile::new(PileType::War)),
+        "ManBody" => cmds.insert(Animated::breath(0.0, 0.03, 6.0)),
+        "ManHead" => cmds.insert(Animated::bob(6. / 4., 0.1, 6.0)),
+        "Bird" => cmds.insert(Animated::breath(0.0, 0.075, 5.0)),
+        "BirdPupillaSprite" => cmds.insert(BirdPupil),
+        "BirdEyePupilla" => cmds.insert_bundle((BirdPupilRoot, Animated::bob(5. / 4., 0.02, 5.0))),
+        _ => cmds,
+    };
 }
-fn setup_scene(
+fn load_scene(
+    mut scene_spawner: HookingSceneSpawner,
     mut cmds: Commands,
-    mut scene_spawner: ResMut<SceneSpawner>,
+    decks: Res<DeckAssets>,
     asset_server: Res<AssetServer>,
 ) {
-    let gltf = scene_spawner.spawn(asset_server.load("scene.glb#Scene0"));
-    cmds.spawn().insert(SceneInstance::<Scene>::new(gltf));
+    let decks = decks.clone();
+    let res = scene_spawner.with_comp_hook(
+        asset_server.load("scene.glb#Scene0"),
+        move |name: &Name, cmds| hook(&decks, name.as_str(), cmds),
+    );
+    cmds.entity(res.entity).insert(Graveyard);
 }
-fn exit_load_state(mut state: ResMut<State<GameState>>) {
-    if state.current() == &GameState::LoadScene {
-        state.set(GameState::Playing).unwrap();
-    }
-}
+
 pub struct Plugin;
 impl BevyPlugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(setup_scene))
-            .add_system(exit_load_state.with_run_criteria(Scene::when_spawned))
-            .add_system(Scene::hook.with_run_criteria(Scene::when_not_spawned));
+        app
+            .add_plugin(HookPlugin)
+            .add_startup_system(load_scene);
+        // Use `.with_run_criteria(is_scene_hooked::<Graveyard>)`
+        // to only run a system after at least one scene is loaded.
     }
 }
 ```
 
-If `SceneHook` is too weak for you and you need access to queries or world
-resources (mutable or not), you can use `world::SceneHook` instead.
-
-## Limitations
-
-* You will need to keep track of what you name what.
+- [bevy game engine]: https://bevyengine.org/
+- [crates.io]: https://crates.io/crates/bevy-scene-hook
+- [warlock-source]: https://github.com/team-plover/warlocks-gambit
 
 ## Change log
 
@@ -103,12 +98,31 @@ resources (mutable or not), you can use `world::SceneHook` instead.
   exclusive world access. Useful if you want access to assets for example.
 * `2.0.0`: **Breaking**: bump bevy version to `0.7` (you should be able to
   upgrade from `1.2.0` without changing your code)
+* `3.0.0`: **Breaking**: completely rework the crate.
+    * Remove the `world` module, as the base hook method has become much more
+      powerful.
+    * Rename `SceneHook` to `Hook`, now `Hook` has a unique method to implement.
+    * You don't have to add any system yourself, now you have to add the
+      `HookPlugin` plugin to your app.
+    * Move the API exclusively to a new `SystemParam`: `HookingSceneSpawner`.
+      Please use that parameter to add and remove scenes that contain hooks.
+      (please tell if you you accidentally spell it `HonkingSceneSpawner` more
+      than once :duck:)
+    * Moved the `when_spawned` run criteria to the `is_scene_hooked`
+      function exposed at the root of the crate, the `HookedSceneState`
+      system parameter or the `SceneLoaded` component. Please use any of
+      those three instead of `when_spawned`.
+    * Now supports passing closures as hooks, instead of having to define
+      a trait each time.
+    * Now supports adding multiple of the same scene! Doesn't handle
+      hot-reloading, but that's alright since bevy's scene hot-reloading
+      is currently broken anyway :D
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.7  | 2.0.0 |
+| 0.7  | 3.0.0 |
 | 0.6  | 1.2.0 |
 
 
