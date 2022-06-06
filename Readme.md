@@ -15,7 +15,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 
 ```toml
 [dependencies]
-bevy-scene-hook = "3.1"
+bevy-scene-hook = "4.0"
 ```
 
 The following snippet of code is extracted from
@@ -62,17 +62,18 @@ fn hook(
     };
 }
 fn load_scene(
-    mut scene_spawner: HookingSceneSpawner,
     mut cmds: Commands,
     decks: Res<DeckAssets>,
     asset_server: Res<AssetServer>,
 ) {
     let decks = decks.clone();
-    let res = scene_spawner.with_comp_hook(
-        asset_server.load("scene.glb#Scene0"),
-        move |name: &Name, cmds| hook(&decks, name.as_str(), cmds),
-    );
-    cmds.entity(res.entity).insert(Graveyard);
+    cmds.insert(Graveyard).spawn_bundle(HookedSceneBundle {
+        scene:  asset_server.load("scene.glb#Scene0"),
+        hook: SceneHook::new_comp(
+            move |name: &Name, cmds| hook(&decks, name.as_str(), cmds),
+        }),
+        ..default()
+    });
 }
 
 pub struct Plugin;
@@ -124,6 +125,7 @@ impl BevyPlugin for Plugin {
 
 | bevy | latest supporting version      |
 |------|--------|
+| 0.8  | 4.0.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
 
