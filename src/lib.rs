@@ -12,7 +12,7 @@ use bevy::{
 mod hook;
 
 use hook::SceneHook;
-pub use hook::{Hook, SceneLoaded};
+pub use hook::{run_hooks, Hook, SceneLoaded};
 
 /// Convenience parameter to query if a scene marked with `M` has been loaded.
 ///
@@ -314,6 +314,6 @@ pub enum Systems {
 pub struct HookPlugin;
 impl Plugin for HookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(hook::run_hooks.label(Systems::SceneHookRunner));
+        app.add_system(run_hooks.label(Systems::SceneHookRunner));
     }
 }

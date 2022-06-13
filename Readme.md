@@ -15,7 +15,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 
 ```toml
 [dependencies]
-bevy-scene-hook = "3.0"
+bevy-scene-hook = "3.1"
 ```
 
 The following snippet of code is extracted from
@@ -117,12 +117,14 @@ impl BevyPlugin for Plugin {
     * Now supports adding multiple of the same scene! Doesn't handle
       hot-reloading, but that's alright since bevy's scene hot-reloading
       is currently broken anyway :D
+* `3.1.0`: make `run_hooks` system public so that it's possible to add it to
+  any stage you want in relation to any other system you want.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.7  | 3.0.0 |
+| 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
 
 

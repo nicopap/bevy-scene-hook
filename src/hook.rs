@@ -10,7 +10,7 @@ pub struct SceneLoaded;
 /// Add this as a component to any entity to trigger `hook`'s
 /// [`Hook::hook_entity`] method when the scene is loaded.
 #[derive(Component)]
-pub(crate) struct SceneHook {
+pub struct SceneHook {
     instance: InstanceId,
     hook: Box<dyn Hook>,
 }
@@ -91,7 +91,7 @@ pub trait Hook: Send + Sync + 'static {
     /// This runs once for all entities in the spawned scene, once loaded.
     fn hook_entity(&self, entity_ref: &EntityRef, commands: &mut EntityCommands);
 }
-pub(crate) fn run_hooks(
+pub fn run_hooks(
     unloaded_instances: Query<(Entity, &SceneHook), Without<SceneLoaded>>,
     scene_manager: Res<SceneSpawner>,
     world: &World,
