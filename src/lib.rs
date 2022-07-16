@@ -8,20 +8,19 @@ use bevy::{
     prelude::*,
 };
 
-pub use hook::{Hook, SceneHook, SceneLoaded};
+pub use hook::{run_hooks, SceneHook, SceneHooked};
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 pub struct HookedSceneBundle {
-    pub scene: Handle<Scene>,
     pub hook: SceneHook,
-    pub transform: Transform,
-    pub global_transform: GlobalTransform,
+    #[bundle]
+    pub scene: SceneBundle,
 }
 
 /// Convenience parameter to query if a scene marked with `M` has been loaded.
 #[derive(SystemParam)]
 pub struct HookedSceneState<'w, 's, M: Component> {
-    query: Query<'w, 's, (), (With<M>, With<SceneLoaded>)>,
+    query: Query<'w, 's, (), (With<M>, With<SceneHooked>)>,
 }
 impl<'w, 's, T: Component> HookedSceneState<'w, 's, T> {
     pub fn is_loaded(&self) -> bool {
@@ -40,7 +39,7 @@ pub fn is_scene_hooked<M: Component>(state: HookedSceneState<M>) -> ShouldRun {
 /// Systems defined in the [`bevy_scene_hook`](crate) crate (this crate).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemLabel)]
 pub enum Systems {
-    /// System running the hooks registered with [`HookingSceneSpawner`].
+    /// System running the hooks.
     SceneHookRunner,
 }
 
