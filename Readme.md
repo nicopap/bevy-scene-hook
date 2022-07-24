@@ -63,7 +63,7 @@ See the examples in the [API doc](https://docs.rs/bevy-scene-hook/) for usage.
       is currently broken anyway :D
 * `3.1.0`: make `run_hooks` system public so that it's possible to add it to
   any stage you want in relation to any other system you want.
-* `4.0.0`: **Breaking**: bump bevy version to `0.7`
+* `4.0.0`: **Breaking**: bump bevy version to `0.8`
     * Uses the new scene bundle system
     * Rename `SceneLoaded` to `SceneHooked`.
     * Removed the `Hook` trait, now `SceneHook::new` accepts a closure.
