@@ -31,9 +31,9 @@ dock (the tree view at the top right) and double-clicking object names.
 
 See the examples in the [API doc](https://docs.rs/bevy-scene-hook/) for usage.
 
-- [bevy game engine]: https://bevyengine.org/
-- [crates.io]: https://crates.io/crates/bevy-scene-hook
-- [warlock-source]: https://github.com/team-plover/warlocks-gambit
+[bevy game engine]: https://bevyengine.org/
+[crates.io]: https://crates.io/crates/bevy-scene-hook
+[warlock-source]: https://github.com/team-plover/warlocks-gambit
 
 ## Change log
 
