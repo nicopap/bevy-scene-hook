@@ -1,114 +1,119 @@
-//! Insert components on loaded scenes.
+//! Systems to insert components on loaded scenes.
+//!
+//! Please see the [`SceneHook`] documentation for detailed examples.
 
-use bevy::{ecs::system::EntityCommands, ecs::world::EntityRef, prelude::*, scene::InstanceId};
+use bevy::ecs::{
+    component::Component,
+    entity::Entity,
+    prelude::{Without, World},
+    system::{Commands, EntityCommands, Query, Res},
+    world::EntityRef,
+};
+use bevy::scene::{SceneInstance, SceneSpawner};
 
-/// Marker Component for scenes that were succesfully hooked.
-#[derive(Component)]
+/// Marker Component for scenes that were hooked.
+#[derive(Component, Debug)]
 #[non_exhaustive]
-pub struct SceneLoaded;
+pub struct SceneHooked;
 
-/// Add this as a component to any entity to trigger `hook`'s
-/// [`Hook::hook_entity`] method when the scene is loaded.
-#[derive(Component)]
-pub struct SceneHook {
-    instance: InstanceId,
-    hook: Box<dyn Hook>,
-}
-impl SceneHook {
-    pub(crate) fn new<T: Hook>(instance: InstanceId, hook: T) -> Self {
-        let hook = Box::new(hook);
-        Self { instance, hook }
-    }
-    pub(crate) fn new_comp<C, F>(instance: InstanceId, hook: F) -> Self
-    where
-        F: Fn(&C, &mut EntityCommands) + Send + Sync + 'static,
-        C: Component,
-    {
-        let hook = move |e: &EntityRef, cmds: &mut EntityCommands| match e.get::<C>() {
-            Some(comp) => hook(comp, cmds),
-            None => {}
-        };
-        Self::new(instance, hook)
-    }
-}
-
-/// Handle adding components to entites named in a loaded scene.
+/// Add this as a component to any entity to run `hook`
+/// when the scene is loaded.
+///
+/// You can use it to add your own non-serializable components to entites
+/// present in a scene file.
+///
+/// A typical usage is adding animation, physics collision data or marker
+/// components to a scene spawned from a file format that do not support it.
 ///
 /// # Example
 ///
-/// ```rust
-/// use bevy::prelude::*;
-/// use bevy::ecs::{world::EntityRef, system::EntityCommands};
-/// use bevy_scene_hook::{Hook, HookingSceneSpawner};
-/// # type DeckData = Scene;
-/// # type Image = Scene;
+///  ```rust
+/// # use bevy::ecs::{system::Res, component::Component, system::Commands};
+/// # use bevy::asset::AssetServer;
+/// # use bevy::utils::default;
+/// # use bevy::scene::SceneBundle;
+/// use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+/// # #[derive(Component)]
+/// # struct Name; impl Name { fn as_str(&self) -> &str { todo!() } }
+/// enum PileType { Drawing }
 ///
 /// #[derive(Component)]
-/// struct CardNo(usize);
+/// struct Pile(PileType);
 ///
-/// #[derive(Clone)]
-/// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
+/// #[derive(Component)]
+/// struct Card;
 ///
-/// #[derive(Clone)]
-/// struct CardAssets {
-///     front_faces: Vec<Handle<Image>>,
-///     back_face: Handle<Image>,
-/// }
-/// struct SceneAssets {
-///     deck: DeckAssets,
-///     cards: CardAssets,
-/// }
-/// impl Hook for SceneAssets {
-///     fn hook_entity(&self, entity: &EntityRef, cmds: &mut EntityCommands) {
-///         match entity.get::<Name>().map(|t|t.as_str()) {
-///             Some("PlayerDeck") => cmds.insert(self.deck.player.clone_weak()),
-///             Some("OppoDeck") => cmds.insert(self.deck.oppo.clone_weak()),
-///             Some("Card") => {
-///                 let card_no = entity.get::<CardNo>().unwrap();
-///                 cmds.insert(self.cards.front_faces[card_no.0].clone_weak())
-///             }
-///             _ => cmds,
-///         };
-///     }
-/// }
-/// fn load_scene(
-///     mut scene_spawner: HookingSceneSpawner,
-///     asset_server: Res<AssetServer>,
-///     deck_assets: Res<DeckAssets>,
-///     cards_assets: Res<CardAssets>,
-/// ) {
-///     let loader = SceneAssets {
-///         deck: deck_assets.clone(),
-///         cards: cards_assets.clone(),
-///     };
-///     scene_spawner.with_hook(asset_server.load("scene.glb#Scene0"), loader);
+/// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
+///     cmds.spawn_bundle(HookedSceneBundle {
+///         scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+///         hook: SceneHook::new(|entity, cmds| {
+///             match entity.get::<Name>().map(|t|t.as_str()) {
+///                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
+///                 Some("Card") => cmds.insert(Card),
+///                 _ => cmds,
+///             };
+///         }),
+///     });
 /// }
 /// ```
-pub trait Hook: Send + Sync + 'static {
-    /// Add [`Component`]s or do anything with entity in the spawned scene
-    /// refered by `entity_ref`.
-    ///
-    /// This runs once for all entities in the spawned scene, once loaded.
-    fn hook_entity(&self, entity_ref: &EntityRef, commands: &mut EntityCommands);
+#[derive(Component)]
+pub struct SceneHook {
+    hook: Box<dyn Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>,
 }
+impl SceneHook {
+    /// Add a hook to a scene, to run for each entities when the scene is
+    /// loaded.
+    ///
+    /// The hook adds [`Component`]s or do anything with entity in the spawned
+    /// scene refered by `EntityRef`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use bevy::ecs::{
+    ///     world::EntityRef, component::Component,
+    ///     system::{Commands, Res, EntityCommands}
+    /// # };
+    /// # use bevy::asset::{AssetServer, Handle};
+    /// # use bevy::utils::default;
+    /// # use bevy::scene::{Scene, SceneBundle};
+    /// use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+    /// # #[derive(Component)] struct Name;
+    /// # type DeckData = Scene;
+    /// #[derive(Clone)]
+    /// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
+    ///
+    /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
+    /// fn load_scene(mut cmds: Commands, decks: Res<DeckAssets>, assets: Res<AssetServer>) {
+    ///     let decks = decks.clone();
+    ///     cmds.spawn_bundle(HookedSceneBundle {
+    ///         scene: SceneBundle { scene: assets.load("scene.glb#Scene0"), ..default() },
+    ///         hook: SceneHook::new(move |entity, cmds| hook(&decks, entity, cmds)),
+    ///     });
+    /// }
+    /// ```
+    pub fn new<F: Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>(hook: F) -> Self {
+        Self {
+            hook: Box::new(hook),
+        }
+    }
+}
+
+/// Run once [`SceneHook`]s added to [`SceneBundle`](crate::SceneBundle) or
+/// [`DynamicSceneBundle`](crate::DynamicSceneBundle) when the scenes are loaded.
 pub fn run_hooks(
-    unloaded_instances: Query<(Entity, &SceneHook), Without<SceneLoaded>>,
+    unloaded_instances: Query<(Entity, &SceneInstance, &SceneHook), Without<SceneHooked>>,
     scene_manager: Res<SceneSpawner>,
     world: &World,
     mut cmds: Commands,
 ) {
-    for (entity, hooked) in unloaded_instances.iter() {
-        if let Some(entities) = scene_manager.iter_instance_entities(hooked.instance) {
+    for (entity, instance, hooked) in unloaded_instances.iter() {
+        if let Some(entities) = scene_manager.iter_instance_entities(**instance) {
             for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
                 let mut cmd = cmds.entity(entity_ref.id());
-                hooked.hook.hook_entity(&entity_ref, &mut cmd);
+                (hooked.hook)(&entity_ref, &mut cmd);
             }
-            cmds.entity(entity).insert(SceneLoaded);
+            cmds.entity(entity).insert(SceneHooked);
         }
-    }
-}
-impl<F: Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static> Hook for F {
-    fn hook_entity(&self, entity_ref: &EntityRef, commands: &mut EntityCommands) {
-        (self)(entity_ref, commands)
     }
 }

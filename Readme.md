@@ -15,7 +15,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 
 ```toml
 [dependencies]
-bevy-scene-hook = "3.1"
+bevy-scene-hook = "4.0"
 ```
 
 The following snippet of code is extracted from
@@ -29,67 +29,11 @@ present in the scene. We add a `Graveyard` component to the `Entity` containing 
 It is possible to name object in `glb` scenes in blender using the Outliner
 dock (the tree view at the top right) and double-clicking object names.
 
-```rust
-#[derive(Component)]
-pub struct Graveyard;
+See the examples in the [API doc](https://docs.rs/bevy-scene-hook/) for usage.
 
-fn hook(
-    decks: &DeckAssets,
-    name: &str,
-    cmds: &mut EntityCommands,
-) {
-    match name {
-        "PlayerPerspective_Orientation" => cmds.insert_bundle((
-            RayCastSource::<HandRaycast>::new(),
-            RayCastSource::<SleeveArea>::new(),
-            RayCastSource::<HandDisengageArea>::new(),
-        )),
-        "PlayerDeck" => cmds.insert(decks.player.clone_weak()),
-        "OppoDeck" => cmds.insert(decks.oppo.clone_weak()),
-        "PlayerPile" => cmds.insert(Pile::new(Participant::Player)),
-        "OppoPile" => cmds.insert(Pile::new(Participant::Oppo)),
-        "PlayerCardSpawn" => cmds.insert(PlayerCardSpawner),
-        "OppoCardSpawn" => cmds.insert(OppoCardSpawner),
-        "PlayerHand" => cmds.insert_bundle((PlayerHand, Animated::bob(2.0, 0.05, 7.0))),
-        "OppoHand" => cmds.insert_bundle((OppoHand, Animated::bob(1.0, 0.3, 6.0))),
-        "Pile" => cmds.insert(Pile::new(PileType::War)),
-        "ManBody" => cmds.insert(Animated::breath(0.0, 0.03, 6.0)),
-        "ManHead" => cmds.insert(Animated::bob(6. / 4., 0.1, 6.0)),
-        "Bird" => cmds.insert(Animated::breath(0.0, 0.075, 5.0)),
-        "BirdPupillaSprite" => cmds.insert(BirdPupil),
-        "BirdEyePupilla" => cmds.insert_bundle((BirdPupilRoot, Animated::bob(5. / 4., 0.02, 5.0))),
-        _ => cmds,
-    };
-}
-fn load_scene(
-    mut scene_spawner: HookingSceneSpawner,
-    mut cmds: Commands,
-    decks: Res<DeckAssets>,
-    asset_server: Res<AssetServer>,
-) {
-    let decks = decks.clone();
-    let res = scene_spawner.with_comp_hook(
-        asset_server.load("scene.glb#Scene0"),
-        move |name: &Name, cmds| hook(&decks, name.as_str(), cmds),
-    );
-    cmds.entity(res.entity).insert(Graveyard);
-}
-
-pub struct Plugin;
-impl BevyPlugin for Plugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_plugin(HookPlugin)
-            .add_startup_system(load_scene);
-        // Use `.with_run_criteria(is_scene_hooked::<Graveyard>)`
-        // to only run a system after at least one scene is loaded.
-    }
-}
-```
-
-- [bevy game engine]: https://bevyengine.org/
-- [crates.io]: https://crates.io/crates/bevy-scene-hook
-- [warlock-source]: https://github.com/team-plover/warlocks-gambit
+[bevy game engine]: https://bevyengine.org/
+[crates.io]: https://crates.io/crates/bevy-scene-hook
+[warlock-source]: https://github.com/team-plover/warlocks-gambit
 
 ## Change log
 
@@ -119,11 +63,18 @@ impl BevyPlugin for Plugin {
       is currently broken anyway :D
 * `3.1.0`: make `run_hooks` system public so that it's possible to add it to
   any stage you want in relation to any other system you want.
+* `4.0.0`: **Breaking**: bump bevy version to `0.8`
+    * Uses the new scene bundle system
+    * Rename `SceneLoaded` to `SceneHooked`.
+    * Removed the `Hook` trait, now `SceneHook::new` accepts a closure.
+    * Instead of using `HookingSceneSpawner`, uses `HookedSceneBundle`
+      and spawn it into an entity.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
+| 0.8  | 4.0.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
 
