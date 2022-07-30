@@ -11,5 +11,4 @@ version = "4.0.0"
 edition = "2021"
 
 [dependencies]
-# bevy = { version = "0.8.0", default-features = false }
-bevy = { version = "0.8.0-dev", default-features = false, git = "https://github.com/bevyengine/bevy.git", rev = "25d222b73e57f27cf7f346015c7f554dafab131a" }
+bevy = { version = "0.8.0", default-features = false, features = [ "bevy_scene" ] }

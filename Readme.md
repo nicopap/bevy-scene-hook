@@ -67,7 +67,7 @@ See the examples in the [API doc](https://docs.rs/bevy-scene-hook/) for usage.
     * Uses the new scene bundle system
     * Rename `SceneLoaded` to `SceneHooked`.
     * Removed the `Hook` trait, now `SceneHook::new` accepts a closure.
-    * Instead of using `HookingSceneSpawner`, use `HookedSceneBundle`
+    * Instead of using `HookingSceneSpawner`, uses `HookedSceneBundle`
       and spawn it into an entity.
 
 ### Version matrix
