@@ -18,18 +18,95 @@ copy/pasting the code as a module, you can get it from [crates.io].
 bevy-scene-hook = "4.0"
 ```
 
-The following snippet of code is extracted from
-[Warlock's Gambit source code][warlock-source].
+### Example
+
+ ```rust
+use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+
+enum PileType { Drawing }
+
+#[derive(Component)]
+struct Pile(PileType);
+
+#[derive(Component)]
+struct Card;
+
+fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
+    cmds.spawn_bundle(HookedSceneBundle {
+        scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+        hook: SceneHook::new(|entity, cmds| {
+            match entity.get::<Name>().map(|t|t.as_str()) {
+                Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
+                Some("Card") => cmds.insert(Card),
+                _ => cmds,
+            };
+        }),
+    });
+}
+```
 
 It loads the `scene.glb` file when the game starts. When the scene is fully loaded,
-the closure passed to `with_comp_hook` is ran for each entity with a `Name` component
-present in the scene. We add a `Graveyard` component to the `Entity` containing the
-`SceneHook`, so that it can later be checked for whether the scene completed loading.
+the closure passed to `SceneHook::new` is ran for each entity
+present in the scene. We add a `Pile` component to entities
+with a `Name` component of value `"Pile"`.
 
 It is possible to name object in `glb` scenes in blender using the Outliner
 dock (the tree view at the top right) and double-clicking object names.
 
-See the examples in the [API doc](https://docs.rs/bevy-scene-hook/) for usage.
+### Implementation
+
+`bevy-scene-hook` is a tinny crate, here is copy/pastable code you can directly vendor
+in your project:
+
+```rust
+use bevy::{
+    prelude::*,
+    scene::SceneInstance,
+    ecs::{world::EntityRef, system::EntityCommands},
+};
+#[derive(Component, Debug)]
+pub struct SceneHooked;
+
+#[derive(Component)]
+pub struct SceneHook {
+    hook: Box<dyn Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>,
+}
+impl SceneHook {
+    pub fn new<F: Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>(hook: F) -> Self {
+        Self { hook: Box::new(hook) }
+    }
+}
+
+pub fn run_hooks(
+    unloaded_instances: Query<(Entity, &SceneInstance, &SceneHook), Without<SceneHooked>>,
+    scene_manager: Res<SceneSpawner>,
+    world: &World,
+    mut cmds: Commands,
+) {
+    for (entity, instance, hooked) in unloaded_instances.iter() {
+        if let Some(entities) = scene_manager.iter_instance_entities(**instance) {
+            for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
+                let mut cmd = cmds.entity(entity_ref.id());
+                (hooked.hook)(&entity_ref, &mut cmd);
+            }
+            cmds.entity(entity).insert(SceneHooked);
+        }
+    }
+}
+
+pub struct HookPlugin;
+impl Plugin for HookPlugin {
+    fn build(&self, app: &mut App) { app.add_system(run_hooks); }
+}
+```
+
+Note that `bevy-scene-hook` also has a few items defined for user convinience:
+
+- `HookedSceneBundle`
+- `HookedSceneState`
+- `is_scene_hooked`
+
+Those extra items are all defined in `lib.rs`.
 
 [bevy game engine]: https://bevyengine.org/
 [crates.io]: https://crates.io/crates/bevy-scene-hook
