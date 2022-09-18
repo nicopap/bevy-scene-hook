@@ -17,6 +17,13 @@ pub struct HookedSceneBundle {
     pub scene: SceneBundle,
 }
 
+#[derive(Bundle)]
+pub struct HookedDynamicSceneBundle {
+    pub hook: SceneHook,
+    #[bundle]
+    pub scene: DynamicSceneBundle,
+}
+
 /// Convenience parameter to query if a scene marked with `M` has been loaded.
 #[derive(SystemParam)]
 pub struct HookedSceneState<'w, 's, M: Component> {
