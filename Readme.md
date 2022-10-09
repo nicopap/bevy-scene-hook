@@ -15,7 +15,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 
 ```toml
 [dependencies]
-bevy-scene-hook = "4.0"
+bevy-scene-hook = "4.1"
 ```
 
 ### Example
@@ -146,12 +146,14 @@ Those extra items are all defined in `lib.rs`.
     * Removed the `Hook` trait, now `SceneHook::new` accepts a closure.
     * Instead of using `HookingSceneSpawner`, uses `HookedSceneBundle`
       and spawn it into an entity.
+* `4.1.0`: Add `HookedDynamicSceneBundle` to use with `DynamicScene`s.
+  Thanks Shatur (#3)
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.8  | 4.0.0 |
+| 0.8  | 4.1.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
 
