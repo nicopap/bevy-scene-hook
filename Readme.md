@@ -13,9 +13,14 @@ copy/pasting the code as a module, you can get it from [crates.io].
 
 ## Usage
 
+1. Add the crate to your dependencies
 ```toml
 [dependencies]
 bevy-scene-hook = "4.1"
+```
+2. Add the plugin
+```rust
+.add_plugin(HookPlugin)
 ```
 
 ### Example
