@@ -7,11 +7,11 @@ readme = "Readme.md"
 keywords = ["bevy"]
 categories = ["game-development"]
 repository = "https://github.com/nicopap/bevy-scene-hook"
-version = "4.1.0"
+version = "5.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.8.0", default-features = false, features = [ "bevy_scene" ] }
+bevy = { version = "0.9", default-features = false, features = [ "bevy_scene" ] }
 
 [dev-dependencies]
-bevy = { version = "0.8.0", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }
+bevy = { version = "0.9", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }

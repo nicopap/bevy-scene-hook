@@ -108,12 +108,11 @@ pub fn run_hooks(
     mut cmds: Commands,
 ) {
     for (entity, instance, hooked) in unloaded_instances.iter() {
-        if let Some(entities) = scene_manager.iter_instance_entities(**instance) {
-            for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
-                let mut cmd = cmds.entity(entity_ref.id());
-                (hooked.hook)(&entity_ref, &mut cmd);
-            }
-            cmds.entity(entity).insert(SceneHooked);
+        let entities = scene_manager.iter_instance_entities(**instance);
+        for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
+            let mut cmd = cmds.entity(entity_ref.id());
+            (hooked.hook)(&entity_ref, &mut cmd);
         }
+        cmds.entity(entity).insert(SceneHooked);
     }
 }
