@@ -152,7 +152,7 @@ Those extra items are all defined in `lib.rs`.
       and spawn it into an entity.
 * `4.1.0`: Add `HookedDynamicSceneBundle` to use with `DynamicScene`s.
   Thanks Shatur (#3)
-* `5.0.0`: bump bevy version to `0.5`
+* `5.0.0`: **Breaking**: bump bevy version to `0.9`
 
 ### Version matrix
 
