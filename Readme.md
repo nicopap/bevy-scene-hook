@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "5.0"
+bevy-scene-hook = "5.1"
 ```
 2. Add the plugin
 ```rust
@@ -153,12 +153,14 @@ Those extra items are all defined in `lib.rs`.
 * `4.1.0`: Add `HookedDynamicSceneBundle` to use with `DynamicScene`s.
   Thanks Shatur (#3)
 * `5.0.0`: **Breaking**: bump bevy version to `0.9`
+* `5.1.1`: My bad, I accidentally published to version `5.1.0` instead of
+  `5.0.0`
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.9  | 5.0.0 |
+| 0.9  | 5.1.1 |
 | 0.8  | 4.1.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
