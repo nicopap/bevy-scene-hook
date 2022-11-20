@@ -71,8 +71,8 @@ impl SceneHook {
     ///
     /// ```rust
     /// # use bevy::ecs::{
-    ///     world::EntityRef, component::Component,
-    ///     system::{Commands, Res, EntityCommands}
+    /// #   world::EntityRef, component::Component,
+    /// #   system::{Commands, Res, Resource, EntityCommands}
     /// # };
     /// # use bevy::asset::{AssetServer, Handle};
     /// # use bevy::utils::default;
@@ -80,7 +80,7 @@ impl SceneHook {
     /// use bevy_scene_hook::{SceneHook, HookedSceneBundle};
     /// # #[derive(Component)] struct Name;
     /// # type DeckData = Scene;
-    /// #[derive(Clone)]
+    /// #[derive(Clone, Resource)]
     /// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
     ///
     /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
@@ -108,11 +108,13 @@ pub fn run_hooks(
     mut cmds: Commands,
 ) {
     for (entity, instance, hooked) in unloaded_instances.iter() {
+        if scene_manager.instance_is_ready(**instance) {
+            cmds.entity(entity).insert(SceneHooked);
+        }
         let entities = scene_manager.iter_instance_entities(**instance);
         for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
         }
-        cmds.entity(entity).insert(SceneHooked);
     }
 }

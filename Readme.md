@@ -89,12 +89,14 @@ pub fn run_hooks(
     mut cmds: Commands,
 ) {
     for (entity, instance, hooked) in unloaded_instances.iter() {
+        if scene_manager.instance_is_ready(**instance) {
+            cmds.entity(entity).insert(SceneHooked);
+        }
         let entities = scene_manager.iter_instance_entities(**instance);
         for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
         }
-        cmds.entity(entity).insert(SceneHooked);
     }
 }
 
@@ -155,12 +157,15 @@ Those extra items are all defined in `lib.rs`.
 * `5.0.0`: **Breaking**: bump bevy version to `0.9`
 * `5.1.1`: My bad, I accidentally published to version `5.1.0` instead of
   `5.0.0`
+* `5.1.2`: Fix scenes never triggering hooks due to a missing check. Thanks
+  sdfgeoff (#5) If you depend on `bevy-scene-hook` as a cargo dependency, you
+  must run `cargo update` to get this fix.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.9  | 5.1.1 |
+| 0.9  | 5.1.2 |
 | 0.8  | 4.1.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
