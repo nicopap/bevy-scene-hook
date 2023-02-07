@@ -2,6 +2,7 @@
 //!
 //! Please see the [`SceneHook`] documentation for detailed examples.
 mod hook;
+pub mod reload;
 
 use bevy::{
     ecs::{schedule::ShouldRun, system::SystemParam},

@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "5.1"
+bevy-scene-hook = "5.2"
 ```
 2. Add the plugin
 ```rust
@@ -160,12 +160,14 @@ Those extra items are all defined in `lib.rs`.
 * `5.1.2`: Fix scenes never triggering hooks due to a missing check. Thanks
   sdfgeoff (#5) If you depend on `bevy-scene-hook` as a cargo dependency, you
   must run `cargo update` to get this fix.
+* `5.2.0`: Add the `reload` module, defining `reload::Hook`, a variant of
+  `SceneHook` that handles gracefully reloads and unloads.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
-| 0.9  | 5.1.2 |
+| 0.9  | 5.2.0 |
 | 0.8  | 4.1.0 |
 | 0.7  | 3.1.0 |
 | 0.6  | 1.2.0 |
