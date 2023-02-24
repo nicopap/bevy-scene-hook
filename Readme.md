@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "5.2"
+bevy-scene-hook = "6"
 ```
 2. Add the plugin
 ```rust
@@ -162,11 +162,13 @@ Those extra items are all defined in `lib.rs`.
   must run `cargo update` to get this fix.
 * `5.2.0`: Add the `reload` module, defining `reload::Hook`, a variant of
   `SceneHook` that handles gracefully reloads and unloads.
+* `6.0.0`: **Breaking**: bump bevy version to `0.10`.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
+| 0.10 | 6.0.0 |
 | 0.9  | 5.2.0 |
 | 0.8  | 4.1.0 |
 | 0.7  | 3.1.0 |

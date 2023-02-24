@@ -44,7 +44,7 @@ pub struct SceneHooked;
 /// struct Card;
 ///
 /// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
-///     cmds.spawn_bundle(HookedSceneBundle {
+///     cmds.spawn(HookedSceneBundle {
 ///         scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
 ///         hook: SceneHook::new(|entity, cmds| {
 ///             match entity.get::<Name>().map(|t|t.as_str()) {
@@ -86,7 +86,7 @@ impl SceneHook {
     /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
     /// fn load_scene(mut cmds: Commands, decks: Res<DeckAssets>, assets: Res<AssetServer>) {
     ///     let decks = decks.clone();
-    ///     cmds.spawn_bundle(HookedSceneBundle {
+    ///     cmds.spawn(HookedSceneBundle {
     ///         scene: SceneBundle { scene: assets.load("scene.glb#Scene0"), ..default() },
     ///         hook: SceneHook::new(move |entity, cmds| hook(&decks, entity, cmds)),
     ///     });
