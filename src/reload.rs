@@ -16,8 +16,18 @@ use bevy::{
 #[derive(Bundle)]
 pub struct SceneBundle {
     pub reload: Hook,
-    #[bundle]
     pub scene: BevySceneBundle,
+}
+
+/// A newtype for a dynamic `Fn` that can be run as a hook.
+///
+/// This is to allow `#[reflect(ignore)]`.
+pub struct HookFn(pub Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>);
+
+impl Default for HookFn {
+    fn default() -> Self {
+        Self(Box::new(|_, _, _, _| {}))
+    }
 }
 
 /// Controls loading and reloading of scenes with a hook.
@@ -69,7 +79,7 @@ pub struct Hook {
     /// - [`Entity`]: The `Entity` of the scene this entity is part of. May be useful
     ///   in combination with `&World` to get components of the scene.
     #[reflect(ignore)]
-    pub hook: Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>,
+    pub hook: HookFn,
 }
 impl Hook {
     pub fn new<F>(hook: F, file_path: String) -> Self
@@ -79,7 +89,7 @@ impl Hook {
         Hook {
             state: State::Loading,
             file_path,
-            hook: Box::new(hook),
+            hook: HookFn(Box::new(hook)),
         }
     }
 }
@@ -89,7 +99,7 @@ struct UpdateHook {
     new_state: State,
 }
 impl Command for UpdateHook {
-    fn write(self, world: &mut World) {
+    fn apply(self, world: &mut World) {
         if let Some(mut hook) = world.get_mut::<Hook>(self.entity) {
             hook.state = self.new_state;
         }
@@ -116,7 +126,7 @@ pub fn run_hooks(
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
                     let mut cmd = cmds.entity(entity_ref.id());
-                    (reload.hook)(&entity_ref, &mut cmd, world, entity);
+                    (reload.hook.0)(&entity_ref, &mut cmd, world, entity);
                 }
             }
             Hooked | Loading => continue,
@@ -151,6 +161,6 @@ impl BevyPlugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.register_type::<Hook>()
             .register_type::<State>()
-            .add_system(run_hooks);
+            .add_systems(bevy::prelude::Update, run_hooks);
     }
 }

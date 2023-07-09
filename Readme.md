@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "6"
+bevy-scene-hook = "7"
 ```
 2. Add the plugin
 ```rust
@@ -102,7 +102,7 @@ pub fn run_hooks(
 
 pub struct HookPlugin;
 impl Plugin for HookPlugin {
-    fn build(&self, app: &mut App) { app.add_system(run_hooks); }
+    fn build(&self, app: &mut App) { app.add_systems(Update, run_hooks); }
 }
 ```
 
@@ -163,11 +163,13 @@ Those extra items are all defined in `lib.rs`.
 * `5.2.0`: Add the `reload` module, defining `reload::Hook`, a variant of
   `SceneHook` that handles gracefully reloads and unloads.
 * `6.0.0`: **Breaking**: bump bevy version to `0.10`.
+* `7.0.0`: **Breaking**: bump bevy version to `0.11`.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|--------|
+| 0.11 | 7.0.0 |
 | 0.10 | 6.0.0 |
 | 0.9  | 5.2.0 |
 | 0.8  | 4.1.0 |

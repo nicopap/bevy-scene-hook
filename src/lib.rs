@@ -11,14 +11,12 @@ pub use hook::{run_hooks, SceneHook, SceneHooked};
 #[derive(Bundle)]
 pub struct HookedSceneBundle {
     pub hook: SceneHook,
-    #[bundle]
     pub scene: SceneBundle,
 }
 
 #[derive(Bundle)]
 pub struct HookedDynamicSceneBundle {
     pub hook: SceneHook,
-    #[bundle]
     pub scene: DynamicSceneBundle,
 }
 
@@ -49,6 +47,6 @@ pub enum Systems {
 pub struct HookPlugin;
 impl Plugin for HookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(run_hooks.in_set(Systems::SceneHookRunner));
+        app.add_systems(Update, run_hooks.in_set(Systems::SceneHookRunner));
     }
 }
