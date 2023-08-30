@@ -111,7 +111,9 @@ pub fn run_hooks(
         if scene_manager.instance_is_ready(**instance) {
             cmds.entity(entity).insert(SceneHooked);
         }
-        let entities = scene_manager.iter_instance_entities(**instance);
+        let entities = scene_manager
+            .iter_instance_entities(**instance)
+            .chain(std::iter::once(entity));
         for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
