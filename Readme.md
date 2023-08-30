@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "7"
+bevy-scene-hook = "8.0.0"
 ```
 2. Add the plugin
 ```rust
@@ -92,7 +92,9 @@ pub fn run_hooks(
         if scene_manager.instance_is_ready(**instance) {
             cmds.entity(entity).insert(SceneHooked);
         }
-        let entities = scene_manager.iter_instance_entities(**instance);
+        let entities = scene_manager
+            .iter_instance_entities(**instance)
+            .chain(std::iter::once(entity));
         for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
@@ -153,7 +155,7 @@ Those extra items are all defined in `lib.rs`.
     * Instead of using `HookingSceneSpawner`, uses `HookedSceneBundle`
       and spawn it into an entity.
 * `4.1.0`: Add `HookedDynamicSceneBundle` to use with `DynamicScene`s.
-  Thanks Shatur (#3)
+  Thanks Shatur (<https://github.com/nicopap/bevy-scene-hook/pull/3>)
 * `5.0.0`: **Breaking**: bump bevy version to `0.9`
 * `5.1.1`: My bad, I accidentally published to version `5.1.0` instead of
   `5.0.0`
@@ -164,12 +166,17 @@ Those extra items are all defined in `lib.rs`.
   `SceneHook` that handles gracefully reloads and unloads.
 * `6.0.0`: **Breaking**: bump bevy version to `0.10`.
 * `7.0.0`: **Breaking**: bump bevy version to `0.11`.
+* `8.0.0`: Add the root entity of the scene to the list of traversed scene entities.
+  * **May be breaking** if you were blanket-adding components to entities & were
+    relying on the root not being part of them.
+  * Also if somehow the root has a property you were testing when adding components.
+  * Thanks ickk (<https://github.com/nicopap/bevy-scene-hook/pull/7>)
 
 ### Version matrix
 
 | bevy | latest supporting version      |
-|------|--------|
-| 0.11 | 7.0.0 |
+|------|-------|
+| 0.11 | 8.0.0 |
 | 0.10 | 6.0.0 |
 | 0.9  | 5.2.0 |
 | 0.8  | 4.1.0 |
