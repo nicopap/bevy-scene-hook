@@ -6,7 +6,7 @@ use bevy::{
         world::EntityRef,
     },
     prelude::{
-        AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity,
+        AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, IntoSystemConfigs,
         Plugin as BevyPlugin, Query, Res, SceneBundle as BevySceneBundle, World,
     },
     reflect::Reflect,
@@ -22,7 +22,9 @@ pub struct SceneBundle {
 /// A newtype for a dynamic `Fn` that can be run as a hook.
 ///
 /// This is to allow `#[reflect(ignore)]`.
-pub struct HookFn(pub Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>);
+pub struct HookFn(
+    pub Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>,
+);
 
 impl Default for HookFn {
     fn default() -> Self {
@@ -107,7 +109,7 @@ impl Command for UpdateHook {
 }
 
 /// Run [`Hook`]s and respawn scenes according to [`Hook::state`].
-pub fn run_hooks(
+pub fn run_reloadable_hooks(
     instances: Query<(Entity, &SceneInstance, &Hook)>,
     scene_manager: Res<SceneSpawner>,
     assets: Res<AssetServer>,
@@ -140,7 +142,7 @@ pub fn run_hooks(
                     new_state: Loading,
                 });
                 cmds.entity(entity)
-                    .insert(assets.load::<Scene, _>(&reload.file_path))
+                    .insert(assets.load::<Scene>(&reload.file_path))
                     .remove::<SceneInstance>();
             }
             MustDelete => {
@@ -161,6 +163,9 @@ impl BevyPlugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.register_type::<Hook>()
             .register_type::<State>()
-            .add_systems(bevy::prelude::Update, run_hooks);
+            .add_systems(
+                bevy::prelude::SpawnScene,
+                run_reloadable_hooks.after(bevy::scene::scene_spawner_system),
+            );
     }
 }

@@ -19,7 +19,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 bevy-scene-hook = "8.0.0"
 ```
 2. Add the plugin
-```rust
+```rust,ignore
 .add_plugin(HookPlugin)
 ```
 
@@ -171,11 +171,14 @@ Those extra items are all defined in `lib.rs`.
     relying on the root not being part of them.
   * Also if somehow the root has a property you were testing when adding components.
   * Thanks ickk (<https://github.com/nicopap/bevy-scene-hook/pull/7>)
+* `9.0.0`: **Breaking**: bump bevy version to `0.12`.
+  * Move `hook` functions to the `SpawnScene` schedule
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|-------|
+| 0.12 | 8.0.0 |
 | 0.11 | 8.0.0 |
 | 0.10 | 6.0.0 |
 | 0.9  | 5.2.0 |

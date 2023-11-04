@@ -4,7 +4,7 @@
 mod hook;
 pub mod reload;
 
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy::{ecs::system::SystemParam, prelude::*, scene::scene_spawner_system};
 
 pub use hook::{run_hooks, SceneHook, SceneHooked};
 
@@ -47,6 +47,11 @@ pub enum Systems {
 pub struct HookPlugin;
 impl Plugin for HookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, run_hooks.in_set(Systems::SceneHookRunner));
+        app.add_systems(
+            SpawnScene,
+            run_hooks
+                .in_set(Systems::SceneHookRunner)
+                .after(scene_spawner_system),
+        );
     }
 }

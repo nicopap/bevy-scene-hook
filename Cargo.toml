@@ -11,4 +11,10 @@ version = "8.0.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.11", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }
+bevy = { version = "0.12", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }
+
+[package.metadata.release]
+pre-release-replacements = [
+  {search="\\| 0.12 \\| [0-9.]* \\|",replace="| 0.12 | {{version}} |",file="Readme.md"},
+  {search="bevy-scene-hook = \"[0-9.]*\"",replace="bevy-scene-hook = \"{{version}}\"",file="Readme.md"},
+]
