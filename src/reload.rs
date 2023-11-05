@@ -22,7 +22,9 @@ pub struct SceneBundle {
 /// A newtype for a dynamic `Fn` that can be run as a hook.
 ///
 /// This is to allow `#[reflect(ignore)]`.
-pub struct HookFn(pub Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>);
+pub struct HookFn(
+    pub Box<dyn Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static>,
+);
 
 impl Default for HookFn {
     fn default() -> Self {
@@ -140,7 +142,7 @@ pub fn run_hooks(
                     new_state: Loading,
                 });
                 cmds.entity(entity)
-                    .insert(assets.load::<Scene, _>(&reload.file_path))
+                    .insert(assets.load::<Scene>(&reload.file_path))
                     .remove::<SceneInstance>();
             }
             MustDelete => {
