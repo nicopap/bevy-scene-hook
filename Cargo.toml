@@ -11,5 +11,17 @@ version = "8.0.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.11", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }
 bevy = { version = "0.12", default-features = false, features = [ "bevy_scene", "bevy_asset" ] }
+
+[dev-dependencies.bevy]
+version = "0.12"
+default-features = false
+features = [
+    "bevy_scene",
+    "bevy_asset",
+    "bevy_gltf",
+    "bevy_winit",
+    "bevy_core_pipeline",
+    "bevy_render",
+    "tonemapping_luts"
+]
