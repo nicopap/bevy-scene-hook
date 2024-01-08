@@ -20,7 +20,7 @@ bevy-scene-hook = "9.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
-.add_plugin(HookPlugin)
+.add_plugins(HookPlugin)
 ```
 
 ### Example
@@ -37,7 +37,7 @@ struct Pile(PileType);
 struct Card;
 
 fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
-    cmds.spawn_bundle(HookedSceneBundle {
+    cmds.spawn(HookedSceneBundle {
         scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
         hook: SceneHook::new(|entity, cmds| {
             match entity.get::<Name>().map(|t|t.as_str()) {
