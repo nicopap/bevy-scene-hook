@@ -20,7 +20,7 @@ bevy-scene-hook = "9.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
-.add_plugin(HookPlugin)
+.add_plugins(HookPlugin)
 ```
 
 ### Example
