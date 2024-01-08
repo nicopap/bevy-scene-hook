@@ -46,7 +46,7 @@ pub struct SceneHooked;
 /// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
 ///     cmds.spawn(HookedSceneBundle {
 ///         scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
-///         hook: SceneHook::new(|entity, cmds| {
+///         hook: SceneHook::new(|entity, cmds, _world| {
 ///             match entity.get::<Name>().map(|t|t.as_str()) {
 ///                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
 ///                 Some("Card") => cmds.insert(Card),
@@ -58,7 +58,7 @@ pub struct SceneHooked;
 /// ```
 #[derive(Component)]
 pub struct SceneHook {
-    hook: Box<dyn Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>,
+    hook: Box<dyn Fn(&EntityRef, &mut EntityCommands, &World) + Send + Sync + 'static>,
 }
 impl SceneHook {
     /// Add a hook to a scene, to run for each entities when the scene is
@@ -83,16 +83,18 @@ impl SceneHook {
     /// #[derive(Clone, Resource)]
     /// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
     ///
-    /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
+    /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands, world: &World) {}
     /// fn load_scene(mut cmds: Commands, decks: Res<DeckAssets>, assets: Res<AssetServer>) {
     ///     let decks = decks.clone();
     ///     cmds.spawn(HookedSceneBundle {
     ///         scene: SceneBundle { scene: assets.load("scene.glb#Scene0"), ..default() },
-    ///         hook: SceneHook::new(move |entity, cmds| hook(&decks, entity, cmds)),
+    ///         hook: SceneHook::new(move |entity, cmds, world| hook(&decks, entity, cmds, world)),
     ///     });
     /// }
     /// ```
-    pub fn new<F: Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>(hook: F) -> Self {
+    pub fn new<F: Fn(&EntityRef, &mut EntityCommands, &World) + Send + Sync + 'static>(
+        hook: F,
+    ) -> Self {
         Self {
             hook: Box::new(hook),
         }
@@ -116,7 +118,7 @@ pub fn run_hooks(
             .chain(std::iter::once(entity));
         for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
             let mut cmd = cmds.entity(entity_ref.id());
-            (hooked.hook)(&entity_ref, &mut cmd);
+            (hooked.hook)(&entity_ref, &mut cmd, world);
         }
     }
 }
