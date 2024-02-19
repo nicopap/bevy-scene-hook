@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "9.0.0"
+bevy-scene-hook = "10.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
@@ -187,7 +187,7 @@ Those extra items are all defined in `lib.rs`.
 
 | bevy | latest supporting version      |
 |------|-------|
-| 0.13 | 9.0.0 |
+| 0.13 | 10.0.0 |
 | 0.12 | 9.0.0 |
 | 0.11 | 8.0.0 |
 | 0.10 | 6.0.0 |
