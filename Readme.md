@@ -26,6 +26,7 @@ bevy-scene-hook = "9.0.0"
 ### Example
 
  ```rust
+use bevy::prelude::*;
 use bevy_scene_hook::{SceneHook, HookedSceneBundle};
 
 enum PileType { Drawing }
@@ -57,6 +58,11 @@ with a `Name` component of value `"Pile"`.
 
 It is possible to name object in `glb` scenes in blender using the Outliner
 dock (the tree view at the top right) and double-clicking object names.
+
+Note that `SceneHook` hooks have access solely to one `EntityRef` and
+`EntityCommands` at a time, and ignore asset reloading.
+
+Consider using this crate's `reload::Hook` for more advanced use-cases.
 
 ### Implementation
 
@@ -173,11 +179,15 @@ Those extra items are all defined in `lib.rs`.
   * Thanks ickk (<https://github.com/nicopap/bevy-scene-hook/pull/7>)
 * `9.0.0`: **Breaking**: bump bevy version to `0.12`.
   * Move `hook` functions to the `SpawnScene` schedule
+* `10.0.0`: **Breaking**: bump bevy version to `0.13`.
+  * Remove the `file_path` `reload::Hook` field in favor of the `Handle::path` method.
+  * Add an example and test the Readme.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|-------|
+| 0.13 | 9.0.0 |
 | 0.12 | 9.0.0 |
 | 0.11 | 8.0.0 |
 | 0.10 | 6.0.0 |

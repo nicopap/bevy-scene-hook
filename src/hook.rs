@@ -25,6 +25,11 @@ pub struct SceneHooked;
 /// A typical usage is adding animation, physics collision data or marker
 /// components to a scene spawned from a file format that do not support it.
 ///
+/// # Access to `World`
+///
+/// A variant of `SceneHook` exists with access to the scene `Entity` and the `&World`,
+/// check [`crate::reload::Hook`] if you need such features.
+///
 /// # Example
 ///
 ///  ```rust
@@ -67,6 +72,11 @@ impl SceneHook {
     /// The hook adds [`Component`]s or do anything with entity in the spawned
     /// scene refered by `EntityRef`.
     ///
+    /// # Access to `World`
+    ///
+    /// A variant of `SceneHook` exists with access to the scene `Entity` and the `&World`,
+    /// check [`crate::reload::Hook`] if you need such features.
+    ///
     /// # Example
     ///
     /// ```rust
@@ -93,9 +103,7 @@ impl SceneHook {
     /// }
     /// ```
     pub fn new<F: Fn(&EntityRef, &mut EntityCommands) + Send + Sync + 'static>(hook: F) -> Self {
-        Self {
-            hook: Box::new(hook),
-        }
+        Self { hook: Box::new(hook) }
     }
 }
 

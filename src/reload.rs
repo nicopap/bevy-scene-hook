@@ -1,19 +1,16 @@
 //! Defines reloading [`Hook`]s and supporting system.
 
-use bevy::{
-    ecs::{
-        system::{Command, EntityCommands},
-        world::EntityRef,
-    },
-    prelude::{
-        AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, IntoSystemConfigs,
-        Plugin as BevyPlugin, Query, Res, SceneBundle as BevySceneBundle, World,
-    },
-    reflect::Reflect,
-    scene::{Scene, SceneInstance, SceneSpawner},
+use bevy::ecs::system::{Command, EntityCommands};
+use bevy::prelude::{
+    AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, EntityRef, Handle,
+    IntoSystemConfigs, Plugin as BevyPlugin, Query, Reflect, Res, Scene,
+    SceneBundle as BevySceneBundle, SceneSpawner, World,
 };
+use bevy::scene::SceneInstance;
 
+/// Bundle a reload [`Hook`] with the standard [`bevy::prelude::SceneBundle`] components.
 #[derive(Bundle)]
+#[allow(missing_docs /* field description is trivial */)]
 pub struct SceneBundle {
     pub reload: Hook,
     pub scene: BevySceneBundle,
@@ -41,13 +38,14 @@ pub enum State {
     /// components added by the scene's [`Hook::hook`].
     Hooked,
     /// The scene's entities, whether they are its direct children or were
-    /// unparented are to be despawned next time [`run_hooks`] runs, to be
+    /// unparented are to be despawned next time [`run_reloadable_hooks`] runs, to be
     /// reloaded, running [`Hook::hook`] again.
     ///
-    /// The spawned scene is loaded using [`Hook::file_path`].
+    /// The spawned scene is loaded using [`Handle::path`] of the entitie's `Handle<Scene>`
+    /// component.
     MustReload,
     /// The scene's entities, whether they are its direct children or were
-    /// unparented are to be despawned next time [`run_hooks`] runs, the scene
+    /// unparented are to be despawned next time [`run_reloadable_hooks`] runs, the scene
     /// entity itself will also be deleted.
     MustDelete,
 }
@@ -68,8 +66,6 @@ pub enum State {
 /// warning.
 #[derive(Component, Reflect)]
 pub struct Hook {
-    /// File path to scene, used when [`State::MustReload`].
-    pub file_path: String,
     /// The reload state of the scene, see type's doc.
     pub state: State,
     /// The hook ran on each entity in the scene when spawned and respawned.
@@ -84,13 +80,13 @@ pub struct Hook {
     pub hook: HookFn,
 }
 impl Hook {
-    pub fn new<F>(hook: F, file_path: String) -> Self
+    /// Create a new `Hook` for a **loading** scene with provided `hook`.
+    pub fn new<F>(hook: F) -> Self
     where
         F: Fn(&EntityRef, &mut EntityCommands, &World, Entity) + Send + Sync + 'static,
     {
-        Hook {
+        Self {
             state: State::Loading,
-            file_path,
             hook: HookFn(Box::new(hook)),
         }
     }
@@ -110,42 +106,39 @@ impl Command for UpdateHook {
 
 /// Run [`Hook`]s and respawn scenes according to [`Hook::state`].
 pub fn run_reloadable_hooks(
-    instances: Query<(Entity, &SceneInstance, &Hook)>,
+    instances: Query<(Entity, &Handle<Scene>, &SceneInstance, &Hook)>,
     scene_manager: Res<SceneSpawner>,
     assets: Res<AssetServer>,
     world: &World,
     mut cmds: Commands,
 ) {
-    use State::*;
-    for (entity, instance, reload) in instances.iter() {
+    for (entity, handle, instance, reload) in instances.iter() {
         let instance_ready = scene_manager.instance_is_ready(**instance);
         match reload.state {
-            Loading if instance_ready => {
-                cmds.add(UpdateHook {
-                    entity,
-                    new_state: Hooked,
-                });
+            State::Loading if instance_ready => {
+                cmds.add(UpdateHook { entity, new_state: State::Hooked });
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
                     let mut cmd = cmds.entity(entity_ref.id());
                     (reload.hook.0)(&entity_ref, &mut cmd, world, entity);
                 }
             }
-            Hooked | Loading => continue,
-            MustReload => {
+            State::Hooked | State::Loading => continue,
+            State::MustReload => {
+                let Some(file_path) = assets.get_path(handle) else {
+                    bevy::log::warn!("Tried to reload a scene without a registered path");
+                    continue;
+                };
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity in entities.filter(|e| world.get_entity(*e).is_some()) {
                     cmds.entity(entity).despawn_recursive();
                 }
-                cmds.add(UpdateHook {
-                    entity,
-                    new_state: Loading,
-                });
+                cmds.add(UpdateHook { entity, new_state: State::Loading });
                 cmds.entity(entity)
-                    .insert(assets.load::<Scene>(&reload.file_path))
+                    .insert(assets.load::<Scene>(file_path))
                     .remove::<SceneInstance>();
             }
-            MustDelete => {
+            State::MustDelete => {
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity in entities.filter(|e| world.get_entity(*e).is_some()) {
                     cmds.entity(entity).despawn_recursive();
@@ -157,7 +150,7 @@ pub fn run_reloadable_hooks(
 }
 
 /// The plugin to manage reloading [`Hook`]s. It just registers [`Hook`],
-/// [`State`] and adds the [`run_hooks`] system.
+/// [`State`] and adds the [`run_reloadable_hooks`] system.
 pub struct Plugin;
 impl BevyPlugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {

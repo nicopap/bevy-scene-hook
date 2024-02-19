@@ -1,0 +1,56 @@
+{
+	"asset":{ "generator":"Khronos glTF Blender I/O v4.0.44", "version":"2.0" },
+	"scene":0,
+	"scenes":[ { "name":"Scene", "nodes":[ 4 ] } ],
+	"nodes":[
+		{
+			"name":"blue",
+			"translation":[ -2.0744, -1.4668, -1.4668 ]
+		},
+		{
+			"name":"green",
+			"translation":[ -2.0744, 1.4668, 1.4668 ]
+		},
+		{
+			"name":"red",
+			"translation":[ 2.0744, -1.4668, -1.4668 ]
+		},
+		{
+			"name":"yellow",
+			"translation":[ 2.0744, 1.4668, 1.4668 ]
+		},
+		{
+			"children":[ 0, 1, 2, 3 ],
+			"mesh":0,
+			"name":"Cube",
+			"rotation":[ 0.3535, 0.3535, -0.1464, 0.8535 ],
+			"scale":[ 0.3408, 0.3408, 0.3408 ]
+		}
+	],
+	"meshes":[
+		{
+			"name":"Cube.001",
+			"primitives":[ { "attributes":{ "POSITION":0, "NORMAL":1, "TEXCOORD_0":2 }, "indices":3 } ]
+		}
+	],
+	"accessors":[
+		{
+			"bufferView":0,
+			"componentType":5126,
+			"count":24,
+			"max":[ 0.5, 0.5, 0.5 ],
+			"min":[ -0.5, -0.5, -0.5 ],
+			"type":"VEC3"
+		},
+		{ "bufferView":1, "componentType":5126, "count":24, "type":"VEC3" },
+		{ "bufferView":2, "componentType":5126, "count":24, "type":"VEC2" },
+		{ "bufferView":3, "componentType":5123, "count":36, "type":"SCALAR" }
+	],
+	"bufferViews":[
+		{ "buffer":0, "byteLength":288, "byteOffset":0, "target":34962 },
+		{ "buffer":0, "byteLength":288, "byteOffset":288, "target":34962 },
+		{ "buffer":0, "byteLength":192, "byteOffset":576, "target":34962 },
+		{ "buffer":0, "byteLength":72, "byteOffset":768, "target":34963 }
+	],
+	"buffers":[ { "byteLength":840, "uri":"sample-scene.bin" } ]
+}
