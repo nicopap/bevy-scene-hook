@@ -5,7 +5,7 @@
 //! a color name.
 use std::f32::consts::TAU;
 
-use bevy::prelude::*;
+use bevy::{color::palettes::css, prelude::*};
 use bevy_scene_hook::{reload, HookPlugin, HookedSceneBundle, SceneHook};
 
 // You can open this file in Blender and modify it, or just open it with a
@@ -52,10 +52,10 @@ fn show_gizmos(mut gizmos: Gizmos, to_show: Query<(&GlobalTransform, &ShowGizmo)
                 gizmos.cuboid(cuboid, to_show.color);
             }
             Shape::Cone => {
-                gizmos.primitive_3d(cone, pos, rot, to_show.color);
+                gizmos.primitive_3d(&cone, pos, rot, to_show.color);
             }
             Shape::Cylinder => {
-                gizmos.primitive_3d(cylinder, pos, rot, to_show.color);
+                gizmos.primitive_3d(&cylinder, pos, rot, to_show.color);
             }
         }
     }
@@ -99,10 +99,10 @@ fn load_scenes(mut cmds: Commands, server: Res<AssetServer>) {
             // parse it and add different thing based on the name. For example,
             // you could convert the name into a color instead of hardcoding the color.
             match entity.get().map(Name::as_str) {
-                Some("yellow") => cmds.insert(show_gizmo(Color::YELLOW, Shape::Sphere)),
-                Some("red") => cmds.insert(show_gizmo(Color::RED, Shape::Cone)),
-                Some("green") => cmds.insert(show_gizmo(Color::GREEN, Shape::Cone)),
-                Some("blue") => cmds.insert(show_gizmo(Color::BLUE, Shape::Sphere)),
+                Some("yellow") => cmds.insert(show_gizmo(css::YELLOW.into(), Shape::Sphere)),
+                Some("red") => cmds.insert(show_gizmo(css::RED.into(), Shape::Cone)),
+                Some("green") => cmds.insert(show_gizmo(css::GREEN.into(), Shape::Cone)),
+                Some("blue") => cmds.insert(show_gizmo(css::BLUE.into(), Shape::Sphere)),
                 Some("Cube") => cmds.insert(Cube(-0.025)),
                 _ => cmds,
             };
@@ -119,10 +119,10 @@ fn load_scenes(mut cmds: Commands, server: Res<AssetServer>) {
         },
         reload: reload::Hook::new(move |entity, cmds, _world, _root| {
             match entity.get().map(Name::as_str) {
-                Some("yellow") => cmds.insert(show_gizmo(Color::YELLOW, Shape::Cube)),
-                Some("red") => cmds.insert(show_gizmo(Color::RED, Shape::Cylinder)),
-                Some("green") => cmds.insert(show_gizmo(Color::GREEN, Shape::Cylinder)),
-                Some("blue") => cmds.insert(show_gizmo(Color::BLUE, Shape::Cube)),
+                Some("yellow") => cmds.insert(show_gizmo(css::YELLOW.into(), Shape::Cube)),
+                Some("red") => cmds.insert(show_gizmo(css::RED.into(), Shape::Cylinder)),
+                Some("green") => cmds.insert(show_gizmo(css::GREEN.into(), Shape::Cylinder)),
+                Some("blue") => cmds.insert(show_gizmo(css::BLUE.into(), Shape::Cube)),
                 Some("Cube") => cmds.insert(Cube(0.05)),
                 _ => cmds,
             };
@@ -146,7 +146,7 @@ fn reload_scene(
             let descendants = children.iter_descendants(entity);
             let mut iter = trans.iter_many_mut(descendants);
             while let Some((mut giz, mut trans)) = iter.fetch_next() {
-                let color = giz.color.hsl_to_vec3();
+                let color = giz.color.to_srgba().to_vec3();
                 giz.color = Color::hsl((color.x + 10.) % 360.0, color.y, color.z);
 
                 trans.rotation *= Quat::from_rotation_x(TAU / 11.);

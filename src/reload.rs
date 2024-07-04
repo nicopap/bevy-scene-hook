@@ -1,6 +1,7 @@
 //! Defines reloading [`Hook`]s and supporting system.
 
-use bevy::ecs::system::{Command, EntityCommands};
+use bevy::ecs::system::EntityCommands;
+use bevy::ecs::world::Command;
 use bevy::prelude::{
     AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, EntityRef, Handle,
     IntoSystemConfigs, Plugin as BevyPlugin, Query, Reflect, Res, Scene,
