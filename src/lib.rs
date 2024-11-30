@@ -1,7 +1,7 @@
 //! Systems to insert components on loaded scenes.
 //!
 //! Hooks allow you to run code on a scene after loading it. It provides an API
-//! similar to the bevy [`SceneBundle`], but with the ability to add components
+//! similar to the bevy [`Scene`], but with the ability to add components
 //! to scene entities once they are loaded.
 //!
 //! This crate has two hook types:
@@ -12,7 +12,7 @@
 //!    but is aware of **reload** state, and also has access to the ECS `&World`
 //!    and the root `Entity` of the scene it is running for.
 //!
-//! The the respective documentation of [`SceneHook`] and [`reload::Hook`] for
+//! The respective documentation of [`SceneHook`] and [`reload::Hook`] for
 //! usage examples.
 mod hook;
 pub mod reload;
@@ -25,24 +25,24 @@ pub use hook::{run_hooks, SceneHook, SceneHooked};
 #[doc = include_str!("../Readme.md")]
 pub struct TestReadme;
 
-/// Bundle a [`SceneHook`] with the standard [`SceneBundle`] components.
+/// Bundle a [`SceneHook`] with the standard [`SceneRoot`] components.
 ///
 /// See [`HookedDynamicSceneBundle`] for dynamic scene support.
 #[derive(Bundle)]
 #[allow(missing_docs /* field description is trivial */)]
 pub struct HookedSceneBundle {
     pub hook: SceneHook,
-    pub scene: SceneBundle,
+    pub scene: SceneRoot,
 }
 
-/// Bundle a [`SceneHook`] with dynamic scenes [`DynamicSceneBundle`] components.
+/// Bundle a [`SceneHook`] with dynamic scenes [`DynamicSceneRoot`] components.
 ///
 /// Similar to [`HookedSceneBundle`], but for dynamic scenes.
 #[derive(Bundle)]
 #[allow(missing_docs /* field description is trivial */)]
 pub struct HookedDynamicSceneBundle {
     pub hook: SceneHook,
-    pub scene: DynamicSceneBundle,
+    pub scene: DynamicSceneRoot,
 }
 
 /// Convenience parameter to query if a scene marked with `M` has been loaded.

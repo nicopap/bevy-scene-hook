@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "10.0.0"
+bevy-scene-hook = "12.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
@@ -39,7 +39,7 @@ struct Card;
 
 fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
     cmds.spawn(HookedSceneBundle {
-        scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+        scene: SceneRoot(asset_server.load("scene.glb#Scene0")),
         hook: SceneHook::new(|entity, cmds| {
             match entity.get::<Name>().map(|t|t.as_str()) {
                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
@@ -101,7 +101,7 @@ pub fn run_hooks(
         let entities = scene_manager
             .iter_instance_entities(**instance)
             .chain(std::iter::once(entity));
-        for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
+        for entity_ref in entities.filter_map(|e| world.get_entity(e).ok()) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
         }
@@ -182,19 +182,23 @@ Those extra items are all defined in `lib.rs`.
 * `10.0.0`: **Breaking**: bump bevy version to `0.13`.
   * Remove the `file_path` `reload::Hook` field in favor of the `Handle::path` method.
   * Add an example and test the Readme.
+* `11.0.0`: **Breaking**: bump bevy version to `0.14`.
+* `12.0.0`: **Breaking**: bump bevy version to `0.15`.
 
 ### Version matrix
 
-| bevy | latest supporting version      |
-|------|-------|
-| 0.13 | 10.0.0 |
-| 0.12 | 9.0.0 |
-| 0.11 | 8.0.0 |
-| 0.10 | 6.0.0 |
-| 0.9  | 5.2.0 |
-| 0.8  | 4.1.0 |
-| 0.7  | 3.1.0 |
-| 0.6  | 1.2.0 |
+| bevy | latest supporting version |
+|------|---------------------------|
+| 0.15 | 12.0.0                    |
+| 0.14 | 11.0.0                    |
+| 0.13 | 10.0.0                    |
+| 0.12 | 9.0.0                     |
+| 0.11 | 8.0.0                     |
+| 0.10 | 6.0.0                     |
+| 0.9  | 5.2.0                     |
+| 0.8  | 4.1.0                     |
+| 0.7  | 3.1.0                     |
+| 0.6  | 1.2.0                     |
 
 
 ## License
