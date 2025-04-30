@@ -1,10 +1,10 @@
 //! Defines reloading [`Hook`]s and supporting system.
 
 use bevy::ecs::system::EntityCommands;
-use bevy::ecs::world::Command;
+use bevy::ecs::prelude::Command;
 use bevy::prelude::{
-    AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, EntityRef,
-    IntoSystemConfigs, Plugin as BevyPlugin, Query, Reflect, Res, Scene,
+    AssetServer, Bundle, Commands, Component, Entity, EntityRef,
+    IntoScheduleConfigs, Plugin as BevyPlugin, Query, Reflect, Res, Scene,
     SceneRoot as BevySceneRoot, SceneSpawner, World,
 };
 use bevy::scene::SceneInstance;
@@ -132,7 +132,7 @@ pub fn run_reloadable_hooks(
                 };
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity in entities.filter(|e| world.get_entity(*e).ok().is_some()) {
-                    cmds.entity(entity).despawn_recursive();
+                    cmds.entity(entity).despawn();
                 }
                 cmds.queue(UpdateHook { entity, new_state: State::Loading });
                 cmds.entity(entity)
@@ -142,9 +142,9 @@ pub fn run_reloadable_hooks(
             State::MustDelete => {
                 let entities = scene_manager.iter_instance_entities(**instance);
                 for entity in entities.filter(|e| world.get_entity(*e).ok().is_some()) {
-                    cmds.entity(entity).despawn_recursive();
+                    cmds.entity(entity).despawn();
                 }
-                cmds.entity(entity).despawn_recursive();
+                cmds.entity(entity).despawn();
             }
         }
     }
