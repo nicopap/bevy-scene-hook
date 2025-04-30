@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "10.0.0"
+bevy-scene-hook = "11.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
@@ -27,7 +27,7 @@ bevy-scene-hook = "10.0.0"
 
  ```rust
 use bevy::prelude::*;
-use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+use bevy_scene_hook::{SceneHook, HookedSceneRoot};
 
 enum PileType { Drawing }
 
@@ -38,8 +38,8 @@ struct Pile(PileType);
 struct Card;
 
 fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
-    cmds.spawn(HookedSceneBundle {
-        scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+    cmds.spawn(HookedSceneRoot {
+        scene: SceneRoot { scene: asset_server.load("scene.glb#Scene0"), ..default() },
         hook: SceneHook::new(|entity, cmds| {
             match entity.get::<Name>().map(|t|t.as_str()) {
                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
@@ -116,7 +116,7 @@ impl Plugin for HookPlugin {
 
 Note that `bevy-scene-hook` also has a few items defined for user convinience:
 
-- `HookedSceneBundle`
+- `HookedSceneRoot`
 - `HookedSceneState`
 - `is_scene_hooked`
 
@@ -182,11 +182,15 @@ Those extra items are all defined in `lib.rs`.
 * `10.0.0`: **Breaking**: bump bevy version to `0.13`.
   * Remove the `file_path` `reload::Hook` field in favor of the `Handle::path` method.
   * Add an example and test the Readme.
+* `11.0.0`: **Breaking**: bump bevy version to `0.14`.
+* `12.0.0`: **Breaking**: bump bevy version to `0.15`.
 
 ### Version matrix
 
 | bevy | latest supporting version      |
 |------|-------|
+| 0.15 | 12.0.0 |
+| 0.14 | 11.0.0 |
 | 0.13 | 10.0.0 |
 | 0.12 | 9.0.0 |
 | 0.11 | 8.0.0 |

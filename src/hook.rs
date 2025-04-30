@@ -36,8 +36,8 @@ pub struct SceneHooked;
 /// # use bevy::ecs::{system::Res, component::Component, system::Commands};
 /// # use bevy::asset::AssetServer;
 /// # use bevy::utils::default;
-/// # use bevy::scene::SceneBundle;
-/// use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+/// # use bevy::scene::SceneRoot;
+/// use bevy_scene_hook::{SceneHook, HookedSceneRoot};
 /// # #[derive(Component)]
 /// # struct Name; impl Name { fn as_str(&self) -> &str { todo!() } }
 /// enum PileType { Drawing }
@@ -49,8 +49,8 @@ pub struct SceneHooked;
 /// struct Card;
 ///
 /// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
-///     cmds.spawn(HookedSceneBundle {
-///         scene: SceneBundle { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+///     cmds.spawn(HookedSceneRoot {
+///         scene: SceneRoot { scene: asset_server.load("scene.glb#Scene0"), ..default() },
 ///         hook: SceneHook::new(|entity, cmds| {
 ///             match entity.get::<Name>().map(|t|t.as_str()) {
 ///                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
@@ -86,8 +86,8 @@ impl SceneHook {
     /// # };
     /// # use bevy::asset::{AssetServer, Handle};
     /// # use bevy::utils::default;
-    /// # use bevy::scene::{Scene, SceneBundle};
-    /// use bevy_scene_hook::{SceneHook, HookedSceneBundle};
+    /// # use bevy::scene::{Scene, SceneRoot};
+    /// use bevy_scene_hook::{SceneHook, HookedSceneRoot};
     /// # #[derive(Component)] struct Name;
     /// # type DeckData = Scene;
     /// #[derive(Clone, Resource)]
@@ -96,8 +96,8 @@ impl SceneHook {
     /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
     /// fn load_scene(mut cmds: Commands, decks: Res<DeckAssets>, assets: Res<AssetServer>) {
     ///     let decks = decks.clone();
-    ///     cmds.spawn(HookedSceneBundle {
-    ///         scene: SceneBundle { scene: assets.load("scene.glb#Scene0"), ..default() },
+    ///     cmds.spawn(HookedSceneRoot {
+    ///         scene: SceneRoot { scene: assets.load("scene.glb#Scene0"), ..default() },
     ///         hook: SceneHook::new(move |entity, cmds| hook(&decks, entity, cmds)),
     ///     });
     /// }
@@ -107,8 +107,8 @@ impl SceneHook {
     }
 }
 
-/// Run once [`SceneHook`]s added to [`SceneBundle`](crate::SceneBundle) or
-/// [`DynamicSceneBundle`](crate::DynamicSceneBundle) when the scenes are loaded.
+/// Run once [`SceneHook`]s added to [`SceneRoot`](crate::SceneRoot) or
+/// [`DynamicSceneRoot`](crate::DynamicSceneRoot) when the scenes are loaded.
 pub fn run_hooks(
     unloaded_instances: Query<(Entity, &SceneInstance, &SceneHook), Without<SceneHooked>>,
     scene_manager: Res<SceneSpawner>,
@@ -122,7 +122,7 @@ pub fn run_hooks(
         let entities = scene_manager
             .iter_instance_entities(**instance)
             .chain(std::iter::once(entity));
-        for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
+        for entity_ref in entities.filter_map(|e| world.get_entity(e).ok()) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
         }
