@@ -16,7 +16,7 @@ copy/pasting the code as a module, you can get it from [crates.io].
 1. Add the crate to your dependencies
 ```toml
 [dependencies]
-bevy-scene-hook = "11.0.0"
+bevy-scene-hook = "14.0.0"
 ```
 2. Add the plugin
 ```rust,ignore
@@ -39,7 +39,7 @@ struct Card;
 
 fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
     cmds.spawn(HookedSceneRoot {
-        scene: SceneRoot { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+        scene: SceneRoot(asset_server.load("scene.glb#Scene0")),
         hook: SceneHook::new(|entity, cmds| {
             match entity.get::<Name>().map(|t|t.as_str()) {
                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
@@ -101,7 +101,7 @@ pub fn run_hooks(
         let entities = scene_manager
             .iter_instance_entities(**instance)
             .chain(std::iter::once(entity));
-        for entity_ref in entities.filter_map(|e| world.get_entity(e)) {
+        for entity_ref in entities.filter_map(|e| world.get_entity(e).ok()) {
             let mut cmd = cmds.entity(entity_ref.id());
             (hooked.hook)(&entity_ref, &mut cmd);
         }
@@ -189,6 +189,7 @@ Those extra items are all defined in `lib.rs`.
 
 | bevy | latest supporting version      |
 |------|-------|
+| 0.18 | 14.0.0 |
 | 0.15 | 12.0.0 |
 | 0.14 | 11.0.0 |
 | 0.13 | 10.0.0 |

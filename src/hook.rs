@@ -50,7 +50,7 @@ pub struct SceneHooked;
 ///
 /// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
 ///     cmds.spawn(HookedSceneRoot {
-///         scene: SceneRoot { scene: asset_server.load("scene.glb#Scene0"), ..default() },
+///         scene: SceneRoot(asset_server.load("scene.glb#Scene0")),
 ///         hook: SceneHook::new(|entity, cmds| {
 ///             match entity.get::<Name>().map(|t|t.as_str()) {
 ///                 Some("Pile") => cmds.insert(Pile(PileType::Drawing)),
@@ -77,28 +77,26 @@ impl SceneHook {
     /// A variant of `SceneHook` exists with access to the scene `Entity` and the `&World`,
     /// check [`crate::reload::Hook`] if you need such features.
     ///
-    /// # Example
+/// # Example
     ///
     /// ```rust
     /// # use bevy::ecs::{
     /// #   world::EntityRef, component::Component,
-    /// #   system::{Commands, Res, Resource, EntityCommands}
+    /// #   system::{Commands, Res, EntityCommands}
     /// # };
-    /// # use bevy::asset::{AssetServer, Handle};
-    /// # use bevy::utils::default;
-    /// # use bevy::scene::{Scene, SceneRoot};
+    /// # use bevy::asset::AssetServer;
+    /// # use bevy::scene::SceneRoot;
     /// use bevy_scene_hook::{SceneHook, HookedSceneRoot};
     /// # #[derive(Component)] struct Name;
-    /// # type DeckData = Scene;
-    /// #[derive(Clone, Resource)]
-    /// struct DeckAssets { player: Handle<DeckData>, oppo: Handle<DeckData> }
     ///
-    /// fn hook(decks: &DeckAssets, entity: &EntityRef, cmds: &mut EntityCommands) {}
-    /// fn load_scene(mut cmds: Commands, decks: Res<DeckAssets>, assets: Res<AssetServer>) {
-    ///     let decks = decks.clone();
+    /// fn hook(entity: &EntityRef, cmds: &mut EntityCommands) {
+    ///     let name = entity.get::<Name>();
+    ///     let _ = name;
+    /// }
+    /// fn load_scene(mut cmds: Commands, asset_server: Res<AssetServer>) {
     ///     cmds.spawn(HookedSceneRoot {
-    ///         scene: SceneRoot { scene: assets.load("scene.glb#Scene0"), ..default() },
-    ///         hook: SceneHook::new(move |entity, cmds| hook(&decks, entity, cmds)),
+    ///         scene: SceneRoot(asset_server.load("scene.glb#Scene0")),
+    ///         hook: SceneHook::new(hook),
     ///     });
     /// }
     /// ```

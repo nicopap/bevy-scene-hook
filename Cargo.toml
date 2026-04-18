@@ -7,21 +7,21 @@ readme = "Readme.md"
 keywords = ["bevy"]
 categories = ["game-development"]
 repository = "https://github.com/nicopap/bevy-scene-hook"
-version = "13.0.0"
+version = "14.0.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.16.0", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
   "bevy_scene",
   "bevy_asset",
   "bevy_log",
 ] }
 
 [dev-dependencies]
-bevy = { version = "0.16.0", default-features = true }
+bevy = { version = "0.18", default-features = true }
 
 [package.metadata.release]
 pre-release-replacements = [
-  { search = "\\| 0.15 \\| [0-9.]* \\|", replace = "| 0.15 | {{version}} |", file = "Readme.md" },
+  { search = "\\| 0.18 \\| [0-9.]* \\|", replace = "| 0.18 | {{version}} |", file = "Readme.md" },
   { search = "bevy-scene-hook = \"[0-9.]*\"", replace = "bevy-scene-hook = \"{{version}}\"", file = "Readme.md" },
 ]

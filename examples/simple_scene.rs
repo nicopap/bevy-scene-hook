@@ -49,7 +49,7 @@ fn show_gizmos(mut gizmos: Gizmos, to_show: Query<(&GlobalTransform, &ShowGizmo)
                 gizmos.sphere(Isometry3d { translation: pos.into(), rotation: rot }, 0.2, to_show.color);
             }
             Shape::Cube => {
-                gizmos.cuboid(cuboid, to_show.color);
+                gizmos.cube(cuboid, to_show.color);
             }
             Shape::Cone => {
                 gizmos.primitive_3d(&cone, Isometry3d { translation: pos.into(), rotation: rot }, to_show.color);
